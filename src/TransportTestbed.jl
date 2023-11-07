@@ -7,6 +7,11 @@ abstract type Logistic <: SigmoidType end
 abstract type TailType end
 abstract type SoftPlus <: TailType end
 
+abstract type MapParam end
+EvaluateAll(::MapParam, ::Int, ::AbstractVector{<:Real}) = @error "Evaluate not implemented for this type"
+Derivative(::MapParam, ::Int, ::AbstractVector{<:Real}) = @error "Derivative not implemented for this type"
+SecondDerivative(::MapParam, ::Int, ::AbstractVector{<:Real}) = @error "SecondDerivative not implemented for this type"
+
 Evaluate(::Type{SigmoidType}, ::Float64) = nothing
 Evaluate(::Type{TailType}, ::Float64) = nothing
 Derivative(::Type{SigmoidType}, ::Float64) = nothing
@@ -32,7 +37,7 @@ SecondDerivative(::Type{SoftPlus}, pt::Float64) = Derivative(Logistic, pt)
 __VV = Vector{<:Vector{<:Any}}
 __VT = Vector{Vector{Float64}}
 __VVN = Union{__VV, Nothing}
-struct SigmoidMap{T<:SigmoidType,U<:TailType}
+struct SigmoidMap{T<:SigmoidType,U<:TailType} <: MapParam
     centers::__VT
     widths::__VT
     weights::__VT
@@ -157,6 +162,31 @@ function SecondDerivative(f::SigmoidMap{T,U}, max_order::Int, pts::AbstractVecto
     end
     output, diff, diff2
 end
-export SigmoidMap, CreateSigmoidMap, Logistic, SoftPlus, EvaluateAll, Derivative, SecondDerivative
 
+struct LinearMap{T<:MapParam}
+    __map_eval::T
+    __coeff::Vector{Float64}
+    function LinearMap(map_eval::U, basisLen::Int) where {U<:MapParam}
+        new{U}(map_eval, zeros(basisLen))
+    end
+end
+
+function SetCoeffs(linmap::LinearMap, coeffs::AbstractVector{<:Real})
+    linmap.__coeff .= coeffs
+end
+
+GetCoeffs(linmap::LinearMap) = linmap.__coeff
+
+function Evaluate(f::LinearMap, points::AbstractVector{<:Real})
+    evals = EvaluateAll(f.__map_eval, length(f.__coeff)-1, points)
+    evals'f.__coeff
+end
+
+function EvaluateInputGrad(f::LinearMap, points::AbstractVector{<:Real})
+    evals, deriv = Derivative(f.__map_eval, length(f.__coeff)-1, points)
+    evals'f.__coeff, deriv'f.__coeff
+end
+
+export SigmoidMap, CreateSigmoidMap, Logistic, SoftPlus, EvaluateAll, Derivative, SecondDerivative
+export LinearMap, GetCoeffs, SetCoeffs, Evaluate, EvaluateInputGrad
 end
