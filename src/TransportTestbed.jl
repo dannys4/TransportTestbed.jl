@@ -34,9 +34,23 @@ Evaluate(::Type{SoftPlus}, pt::Float64) = log(1+exp(pt))
 Derivative(::Type{SoftPlus}, pt::Float64) = Evaluate(Logistic, pt)
 SecondDerivative(::Type{SoftPlus}, pt::Float64) = Derivative(Logistic, pt)
 
+module DerivativeFlags
+    const __DerivativeFlags = UInt8
+    const None::__DerivativeFlags = 0
+    const InputGrad::__DerivativeFlags = 1
+    const ParamGrad::__DerivativeFlags = 0
+    const InputHess::__DerivativeFlags = 2
+    const MixedGrad::__DerivativeFlags = 1
+    const MixedHess::__DerivativeFlags = 2
+end
+
 __VV = Vector{<:Vector{<:Any}}
 __VT = Vector{Vector{Float64}}
 __VVN = Union{__VV, Nothing}
+__VR = AbstractVector{<:Real}
+__VF = AbstractVector{DerivativeFlags.__DerivativeFlags}
+InputDerivatives(flags::__VF) = maximum(flags)
+
 struct SigmoidMap{T<:SigmoidType,U<:TailType} <: MapParam
     centers::__VT
     widths::__VT
@@ -171,22 +185,83 @@ struct LinearMap{T<:MapParam}
     end
 end
 
-function SetCoeffs(linmap::LinearMap, coeffs::AbstractVector{<:Real})
+function SetCoeffs(linmap::LinearMap, coeffs::__VR)
     linmap.__coeff .= coeffs
 end
 
 GetCoeffs(linmap::LinearMap) = linmap.__coeff
 
-function Evaluate(f::LinearMap, points::AbstractVector{<:Real})
+function Evaluate(f::LinearMap, points::__VR)
     evals = EvaluateAll(f.__map_eval, length(f.__coeff)-1, points)
     evals'f.__coeff
 end
 
-function EvaluateInputGrad(f::LinearMap, points::AbstractVector{<:Real})
+function EvaluateInputGrad(f::LinearMap, points::__VR)
     evals, deriv = Derivative(f.__map_eval, length(f.__coeff)-1, points)
     evals'f.__coeff, deriv'f.__coeff
 end
 
+function EvaluateParamGrad(f::LinearMap, points::__VR)
+    evals = EvaluateAll(f.__map_eval, length(f.__coeff)-1, points)
+    evals'f.__coeff, evals
+end
+
+function EvaluateInputParamGrad(f::LinearMap, points::__VR)
+    evals, deriv = Derivative(f.__map_eval, length(f.__coeff)-1, points)
+    evals'f.__coeff, deriv'f.__coeff, evals
+end
+
+function EvaluateInputGradHess(f::LinearMap, points::__VR)
+    evals, diff, diff2 = SecondDerivative(f.__map_eval, length(f.__coeff)-1, points)
+    evals'f.__coeff, diff'f.__coeff, diff2'f.__coeff
+end
+
+function EvaluateInputGradMixedHess(f::LinearMap, points::__VR)
+    evals, diff, = Derivative(f.__map_eval, length(f.__coeff)-1, points)
+    evals'f.__coeff, diff'f.__coeff, diff
+end
+
+function EvaluateParamGradInputGradHessMixedHess(f::LinearMap, points::__VR)
+    evals, diff, diff2 = SecondDerivative(f.__map_eval, length(f.__coeff)-1, points)
+    evals'f.__coeff, evals, diff'f.__coeff, diff2'f.__coeff, diff
+end
+
+function Evaluate(f::LinearMap, points::__VR, flags::__VF)
+    max_deriv = InputDerivatives(flags)
+    eval = diff = diff2 = nothing
+    if max_deriv == 0
+        eval = EvaluateAll(f.__map_eval, length(f.__coeff)-1, points)
+    elseif max_deriv == 1
+        eval, diff = Derivative(f.__map_eval, length(f.__coeff)-1, points)
+    elseif max_deriv == 2
+        eval, diff, diff2 = SecondDerivative(f.__map_eval, length(f.__coeff)-1, points)
+    else
+        @error "Invalid number of derivatives, $max_deriv"
+    end
+    ret = []
+    for flag in flags
+        if flag == DerivativeFlags.None
+            push!(ret, eval'f.__coeff)
+        elseif flag == DerivativeFlags.InputGrad
+            push!(ret, diff'f.__coeff)
+        elseif flag == DerivativeFlags.InputHess
+            push!(ret, diff2'f.__coeff)
+        elseif flag == DerivativeFlags.ParamGrad
+            push!(ret, eval)
+        elseif flag == DerivativeFlags.MixedGrad
+            push!(ret, diff)
+        elseif flag == DerivativeFlags.MixedHess
+            push!(ret, diff2)
+        else
+            @error "Could not find flag $flag"
+        end
+    end
+    ret
+end
+
 export SigmoidMap, CreateSigmoidMap, Logistic, SoftPlus, EvaluateAll, Derivative, SecondDerivative
-export LinearMap, GetCoeffs, SetCoeffs, Evaluate, EvaluateInputGrad
+export LinearMap, GetCoeffs, SetCoeffs
+export Evaluate, EvaluateInputGrad, EvaluateParamGrad
+export EvaluateInputGradHess, EvaluateParamHess
+export EvaluateInputParamGrad, EvaluateInputParamGradHess, EvaluateInputGradMixedHess, EvaluateParamGradInputGradHessMixedHess
 end

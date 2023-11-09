@@ -21,7 +21,9 @@ include("test_linear_map.jl")
     @testset "Linear Map" begin
         @testset "Identity Map" begin
             TestIdentityMap()
-            TestLinearIdentityMap()
+            TestLinearIdentityMapEvaluate()
+            TestLinearIdentityMapGrad()
+            TestLinearIdentityMapHess()
         end
     end
 end
