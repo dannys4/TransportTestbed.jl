@@ -9,9 +9,9 @@ struct BlackboxQuad{T} <: QuadRule
     eval::T
 end
 
-getQuad(q::QuadRule, ::Int) = __notImplement(getQuad, typeof(q), QuadRule)
-getQuad(q::MCQuad, N::Int) = (q.samples[1:N], fill(1/N, N))
-getQuad(q::BlackboxQuad, N::Int) = q.eval(N)
+GetQuad(q::QuadRule, ::Int) = __notImplement(getQuad, typeof(q), QuadRule)
+GetQuad(q::MCQuad, N::Int) = (q.samples[1:N], fill(1/N, N))
+GetQuad(q::BlackboxQuad, N::Int) = q.eval(N)
 
 abstract type LossFunction end
 struct KLDiv <: LossFunction end
@@ -30,6 +30,12 @@ struct CombinedLoss{P,PReg,SReg} <: LossFunction where {P<:LossFunction, PReg<:L
     end
 end
 
-function (kl::KLDiv)(Umap::T, density::D, qrule::Q, num_quad::Int) where {T<:TransportMap,D,Q<:QuadRule}
-    
+Loss(loss::LossFunction, ::TransportMap, _, ::QuadRule, ::Int) = __notImplement(Loss, typeof(loss), LossFunction)
+
+function Loss(::KLDiv, Umap::TransportMap, logdensity::D, qrule::QuadRule, num_quad::Int) where {D}
+    pts, wts = GetQuad(qrule, num_quad)
+    u_eval = EvaluateMap(Umap, pts)
+    logq_comp_u = logdensity(u_eval)
+    logdet_u = LogDeterminant(Umap, logq_comp_u)
+    -(logq_comp_u + logdet_u)'*wts
 end

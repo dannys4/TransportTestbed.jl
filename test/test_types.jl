@@ -40,7 +40,9 @@ end
 
 function DefaultIdentityMap(num_params=4)
     id = IdMapParam()
-    LinearMap(id, num_params)
+    linmap = LinearMap(id, num_params)
+    SetParams(linmap, ones(num_params))
+    linmap
 end
 
 function DefaultSigmoidMap(num_sigs = 10)

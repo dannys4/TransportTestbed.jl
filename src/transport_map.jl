@@ -3,7 +3,7 @@ EvaluateMap(f::TransportMap, points::__VR, deriv_flag::DerivativeFlags.__Derivat
 
 function LogDeterminant(umap::TransportMap, pts::Vector{Float64})
     igrad = EvaluateMap(umap, pts, DerivativeFlags.InputGrad)
-    log.(abs.(igrad))
+    log.(igrad)
 end
 
 function LogDeterminantInputGrad(umap::TransportMap, pts::Vector{Float64})
