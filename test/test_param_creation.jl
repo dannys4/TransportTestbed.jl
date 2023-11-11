@@ -1,3 +1,23 @@
+struct FakeParam <: TransportTestbed.MapParam end
+struct FakeSigmoid <: TransportTestbed.SigmoidType end
+struct FakeTail <: TransportTestbed.TailType end
+using TransportTestbed: NotImplementedError, Evaluate, EvaluateAll, Derivative, SecondDerivative
+
+function TestFakeCreation()
+    p = FakeParam()
+    s = FakeSigmoid()
+    t = FakeTail()
+    @test_throws NotImplementedError EvaluateAll(p, 3, [1,2,3])
+    @test_throws NotImplementedError Derivative(p, 3, [1,2,3])
+    @test_throws NotImplementedError SecondDerivative(p, 3, [1,2,3])
+    @test_throws NotImplementedError Evaluate(s, 3.)
+    @test_throws NotImplementedError Derivative(s, 3.)
+    @test_throws NotImplementedError SecondDerivative(s, 3.)
+    @test_throws NotImplementedError Evaluate(t, 3.)
+    @test_throws NotImplementedError Derivative(t, 3.)
+    @test_throws NotImplementedError SecondDerivative(t, 3.)
+end
+
 function TestSigmoidParamCreation()
     centers = [[1],[2,3]]
     widths = [[1]]

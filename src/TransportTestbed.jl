@@ -1,5 +1,6 @@
 module TransportTestbed
 using Random, LinearAlgebra
+import Base: showerror, Exception
 
 abstract type SigmoidType end
 abstract type Logistic <: SigmoidType end
@@ -7,6 +8,14 @@ abstract type Logistic <: SigmoidType end
 abstract type TailType end
 abstract type SoftPlus <: TailType end
 abstract type MapParam end
+
+struct NotImplementedError{T} <: Base.Exception where {T}
+    parent_class::Type{T}
+    method::Function
+    child_class::Type{<:T}
+end
+NotImplementedError(parent_class::Type{T}, method, child_class::Type{<:T}) where {T} = NotImplementedError{T}(parent_class, method, child_class)
+Base.showerror(io::IO, exc::NotImplementedError{T}) where {T} = print(io, "Class $(exc.child_class) does not implement method $(exc.method) from parent $(exc.parent_class)")
 
 module DerivativeFlags
     @enum __DerivativeFlags None=0 ParamGrad=1 InputGrad=2 MixedGrad=3 MixedHess=4 InputHess=5

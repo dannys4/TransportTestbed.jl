@@ -1,15 +1,21 @@
 
-EvaluateAll(::MapParam, ::Int, ::AbstractVector{<:Real}) = @error "Evaluate not implemented for this type"
-Derivative(::MapParam, ::Int, ::AbstractVector{<:Real}) = @error "Derivative not implemented for this type"
-SecondDerivative(::MapParam, ::Int, ::AbstractVector{<:Real}) = @error "SecondDerivative not implemented for this type"
+function __notImplement(method,::Type{T} = T, ::Type{U} = U) where {T,U}
+    throw(NotImplementedError(U, method, T))
+end
+function __notImplementParam(method, T1::Type{T} = T) where {T}
+    __notImplement{T,MapParam}(method, T1)
+end
 
-Evaluate(::Type{SigmoidType}, ::Float64) = nothing
-Evaluate(::Type{TailType}, ::Float64) = nothing
-Derivative(::Type{SigmoidType}, ::Float64) = nothing
-Derivative(::Type{TailType}, ::Float64) = nothing
-SecondDerivative(::Type{SigmoidType}, ::Float64) = nothing
-SecondDerivative(::Type{TailType}, ::Float64) = nothing
+EvaluateAll(::T, ::Int, ::AbstractVector{<:Real}) where {T<:MapParam} = __notImplementParam{T}(EvaluateAll)
+Derivative(::T, ::Int, ::AbstractVector{<:Real}) where {T<:MapParam} = __notImplementParam{T}(Derivative)
+SecondDerivative(::T, ::Int, ::AbstractVector{<:Real}) where {T<:MapParam} = __notImplementParam{T}(SecondDerivative)
 
+Evaluate(::Type{T}, ::Float64) where {T<:SigmoidType} = __notImplement{T,SigmoidType}(Evaluate)
+Evaluate(::Type{T}, ::Float64) where {T<:TailType} = __notImplement{T,TailType}(Evaluate)
+Derivative(::Type{T}, ::Float64) where {T<:SigmoidType} = __notImplement{T,SigmoidType}(Derivative)
+Derivative(::Type{T}, ::Float64) where {T<:TailType} = __notImplement{T,TailType}(Derivative)
+SecondDerivative(::Type{T}, ::Float64) where {T<:SigmoidType} = __notImplement{T,SigmoidType}(SecondDerivative)
+SecondDerivative(::Type{T}, ::Float64) where {T<:TailType} = __notImplement{T,TailType}(SecondDerivative)
 
 Evaluate(::Type{Logistic}, pt::Float64) = pt < 0 ? exp(pt)/(1+exp(pt)) : 1/(1+exp(-pt))
 function Derivative(::Type{Logistic}, pt::Float64)

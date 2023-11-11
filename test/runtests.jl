@@ -1,6 +1,6 @@
 using TransportTestbed
 using Test, Random
-include("test_sigmoid_creation.jl")
+include("test_param_creation.jl")
 include("test_sigmoid_eval.jl")
 include("test_linear_map.jl")
 @testset "TransportTestbed.jl" begin
