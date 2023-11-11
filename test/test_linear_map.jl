@@ -188,6 +188,9 @@ function TestLinearIdentityMapHess()
     @test all(igrad_pts_lin1 .== igrad_pts_lin3)
     @test all(abs.(mixed_fd_diff - mgrad_pts_lin3) .< 10*fd_delta)
 
+    _,_,mgrad_pts_lin3_fd = EvaluateInputGradMixedGrad(linmap, points .+ fd_delta)
+    mixed_fd_diff2 = (mgrad_pts_lin3_fd - mgrad_pts_lin3)/fd_delta
+
     _, pgrad_pts_lin1 = EvaluateParamGrad(linmap, points)
     eval_pts_lin4, pgrad_pts_lin4, igrad_pts_lin4, mgrad_pts_lin4, mhess_pts_lin4, ihess_pts_lin4 = EvaluateParamGradInputGradMixedGradMixedInputHess(linmap, points)
     @test all(eval_pts_lin1 .== eval_pts_lin4)
@@ -195,7 +198,7 @@ function TestLinearIdentityMapHess()
     @test all(pgrad_pts_lin1 .== pgrad_pts_lin4)
     @test all(ihess_pts_lin2 .== ihess_pts_lin4)
     @test all(mgrad_pts_lin3 .== mgrad_pts_lin4)
-    # TODO: Test mhess
+    @test all(abs.(mixed_fd_diff2 - mhess_pts_lin4) .< 10*fd_delta)
 end
 
 function TestLinearIdentityMapEvaluateMap()
@@ -208,14 +211,17 @@ function TestLinearIdentityMapEvaluateMap()
     SetCoeffs(linmap, ones(num_coeffs))
 
     ref_eval, ref_pgrad, ref_igrad, ref_mgrad, ref_mhess, ref_ihess = EvaluateParamGradInputGradMixedGradMixedInputHess(linmap, points)
-    all_ref_evals = [ref_eval, ref_pgrad, ref_igrad, ref_mgrad, ref_mhess, ref_ihess]
-    all_flags = [DerivativeFlags.None, DerivativeFlags.ParamGrad, DerivativeFlags.InputGrad, DerivativeFlags.MixedGrad, DerivativeFlags.MixedHess, DerivativeFlags.InputHess]
-    idxs = collect(1:length(all_flags))
+    DF = DerivativeFlags
+    eval_plus_flags = [(DF.None, ref_eval), (DF.ParamGrad, ref_pgrad), (DF.InputGrad,ref_igrad), (DF.MixedGrad, ref_mgrad), (DF.MixedHess, ref_mhess), (DF.InputHess, ref_ihess)]
+    idxs = collect(eachindex(eval_plus_flags))
     pset = powerset(idxs)
     for idx in pset
-        evals = EvaluateMap(linmap, points, all_flags[idx])
+        idx_eval_flags = eval_plus_flags[idx]
+        idx_flags = [eval_flag[1] for eval_flag in idx_eval_flags]
+        idx_ref_evals = [eval_flag[2] for eval_flag in idx_eval_flags]
+        idx_evals = EvaluateMap(linmap, points, idx_flags)
         for j in eachindex(idx)
-            @test all(evals[j] .== all_ref_evals[idx[j]])
+            @test all(idx_evals[j] .== idx_ref_evals[j])
         end
     end
 end
