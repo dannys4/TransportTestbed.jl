@@ -1,5 +1,5 @@
-function TestMapEvaluation()
-    f = CreateSigmoidMap(;mapLB = 0., mapUB = 0.)
+function TestSigmoidParamEvaluation()
+    f = CreateSigmoidParam(;mapLB = 0., mapUB = 0.)
     xgrid = -5:0.05:5
     line = EvaluateAll(f, 2, xgrid)
     @test all(line[1,:] .== 1.)
@@ -8,7 +8,7 @@ function TestMapEvaluation()
     centers = [[0], [-0.5, 0.5], [-1, 0, 1]]
     support_bound = 100.
     xgrid = vcat([-support_bound, 0., support_bound], xgrid)
-    f = CreateSigmoidMap(;centers)
+    f = CreateSigmoidParam(;centers)
     evaluations = EvaluateAll(f, 5, xgrid)
     @test all(evaluations[1,:] .== 1.)
     @test all(evaluations[4:end,:] .>= 0) && all(evaluations[4:end,:] .<= 1)
@@ -20,8 +20,8 @@ function TestMapEvaluation()
     @test all(diff_first_eval .>= 0.) # Check if monotone
 end
 
-function TestMapDerivative()
-    f = CreateSigmoidMap(;mapLB = 0., mapUB = 0.)
+function TestSigmoidParamDerivative()
+    f = CreateSigmoidParam(;mapLB = 0., mapUB = 0.)
     xgrid = -3:0.05:3
     line, line_diff = Derivative(f, 2, xgrid)
     @test all(line[1,:] .== 1.)
@@ -33,7 +33,7 @@ function TestMapDerivative()
     support_bound = 100.
     fd_delta = 1e-7
     xgrid = vcat([-support_bound, 0., support_bound], xgrid)
-    f = CreateSigmoidMap(;centers)
+    f = CreateSigmoidParam(;centers)
     f_eval = EvaluateAll(f, 5, xgrid)
     f_eval_deriv, diff = Derivative(f, 5, xgrid)
     f_eval_fd = EvaluateAll(f, 5, xgrid .+ fd_delta)
@@ -45,8 +45,8 @@ function TestMapDerivative()
     @test all(err .< 10*fd_delta)
 end
 
-function TestMapSecondDerivative()
-    f = CreateSigmoidMap(;mapLB = 0., mapUB = 0.)
+function TestSigmoidParamSecondDerivative()
+    f = CreateSigmoidParam(;mapLB = 0., mapUB = 0.)
     xgrid = -3:0.05:3
     line1 = EvaluateAll(f,2,xgrid)
     _, line2_diff = Derivative(f,2,xgrid)
@@ -60,7 +60,7 @@ function TestMapSecondDerivative()
     support_bound = 100.
     fd_delta = 1e-7
     xgrid = vcat([-support_bound, 0., support_bound], xgrid)
-    f = CreateSigmoidMap(;centers)
+    f = CreateSigmoidParam(;centers)
     f_eval = EvaluateAll(f, 5, xgrid)
     _, diff    = Derivative(f, 5, xgrid)
     _, diff_fd = Derivative(f, 5, xgrid .+ fd_delta)

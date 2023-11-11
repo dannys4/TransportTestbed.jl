@@ -2,6 +2,7 @@
 using TransportTestbed: EvaluateAll, Derivative, SecondDerivative
 # Internal functions to test evaluation technique
 using TransportTestbed: Evaluate, EvaluateInputGrad, EvaluateParamGrad, EvaluateInputParamGrad, EvaluateInputGradHess, EvaluateInputGradMixedGrad, EvaluateParamGradInputGradMixedGradMixedInputHess
+
 struct IdMapParam <: TransportTestbed.MapParam end
 
 # From https://rosettacode.org/wiki/Power_set#Julia
@@ -43,7 +44,8 @@ function TransportTestbed.SecondDerivative(::IdMapParam, max_order::Int, pts::Ab
     output, diff, diff2
 end
 
-function TestIdentityMap()
+
+function TestIdentityMapParam()
     id = IdMapParam()
     pts = -5:0.05:5
     max_order = 5
@@ -58,13 +60,11 @@ function TestIdentityMap()
     @test all(out3_diff2 .== 0.)
 end
 
-function TestLinearIdentityMapEvaluate()
-    id = IdMapParam()
-    rng = Xoshiro(29302)
-    N_pts = 1000
+function TestLinearMapEvaluate(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000)
     points = randn(rng, N_pts)
-    num_coeffs = 4
-    linmap = LinearMap(id, num_coeffs)
+    num_coeffs = NumCoeffs(linmap)
+    @test num_coeffs == length(linmap.__coeff)
+
     sample_coeffs = 1:num_coeffs
     SetCoeffs(linmap, sample_coeffs)
     @test all(GetCoeffs(linmap) .== sample_coeffs)
@@ -74,49 +74,15 @@ function TestLinearIdentityMapEvaluate()
     scale, shift = 0.75, 0.25
     SetCoeffs(linmap, scale*sample_coeffs .+ shift)
     eval_pts_lin = Evaluate(linmap, points)
-    @test all(abs.(eval_pts_lin - (scale*eval_pts + EvaluateAll(id, num_coeffs-1, points)'*fill(shift, num_coeffs))) .< 1e-10)
+    @test all(abs.(eval_pts_lin - (scale*eval_pts + EvaluateAll(linmap.__map_eval, num_coeffs-1, points)'*fill(shift, num_coeffs))) .< 1e-10)
 
 end
 
-function TestLinearIdentityMapGrad()
-    id = IdMapParam()
-    rng = Xoshiro(29302)
-    N_pts = 1000
-    fd_delta = 1e-8
-
+function TestLinearMapGrad(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000, fd_delta=1e-5)
+    num_coeffs = NumCoeffs(linmap)
     points = randn(rng, N_pts)
-    num_coeffs = 4
-    linmap = LinearMap(id, num_coeffs)
-
-    # Gradients
-    SetCoeffs(linmap, ones(num_coeffs))
-    eval_pts_lin1 = Evaluate(linmap, points)
-    eval_pts_lin2, grad_pts_lin2 = EvaluateInputGrad(linmap, points)
-    @test all(eval_pts_lin2 .== eval_pts_lin1)
-    @test all(grad_pts_lin2 .== num_coeffs)
-    eval_pts_lin3, grad_pts_lin3 = EvaluateParamGrad(linmap, points)
-    @test all(eval_pts_lin3 .== eval_pts_lin1)
-    @test size(grad_pts_lin3) == (4,N_pts)
-    SetCoeffs(linmap, ones(num_coeffs) .+ fd_delta)
-    _, grad_pts_lin3_fd = EvaluateParamGrad(linmap, points)
-    @test all((grad_pts_lin3_fd .- grad_pts_lin3)/fd_delta .< num_coeffs*10*fd_delta)
-    SetCoeffs(linmap, ones(num_coeffs))
-    eval_pts_lin4, igrad_pts_lin4, pgrad_pts_lin4 = EvaluateInputParamGrad(linmap, points)
-    @test all(eval_pts_lin4 .== eval_pts_lin1)
-    @test all(igrad_pts_lin4 .== grad_pts_lin2)
-    @test all(pgrad_pts_lin4 .== grad_pts_lin3)
-
-end
-
-function TestLinearIdentityMapGrad()
-    id = IdMapParam()
-    rng = Xoshiro(29302)
-    N_pts = 1000
-    fd_delta = 1e-5
-
-    points = randn(rng, N_pts)
-    num_coeffs = 4
-    linmap = LinearMap(id, num_coeffs)
+    default_coeffs = ones(num_coeffs)
+    SetCoeffs(linmap, default_coeffs)
 
     # Gradients
     SetCoeffs(linmap, ones(num_coeffs))
@@ -128,12 +94,12 @@ function TestLinearIdentityMapGrad()
     @test all(abs.(grad_pts_lin2 - igrad_fd_diff) .< 10*fd_delta)
     eval_pts_lin3, grad_pts_lin3 = EvaluateParamGrad(linmap, points)
     @test all(eval_pts_lin3 .== eval_pts_lin1)
-    @test size(grad_pts_lin3) == (4,N_pts)
+    @test size(grad_pts_lin3) == (num_coeffs,N_pts)
     
     eval_pts = Evaluate(linmap, points)
     pgrad_fd_diff = []
     for n in 1:num_coeffs
-        new_coeffs = ones(num_coeffs)
+        new_coeffs = copy(default_coeffs)
         new_coeffs[n] += fd_delta
         SetCoeffs(linmap, new_coeffs)
         eval_pts_param_fd = Evaluate(linmap, points)
@@ -152,16 +118,11 @@ function TestLinearIdentityMapGrad()
 end
 
 
-function TestLinearIdentityMapHess()
-    id = IdMapParam()
-    rng = Xoshiro(29302)
-    N_pts = 1000
-    fd_delta = 1e-8
-
+function TestLinearMapHess(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000, fd_delta=1e-8)
     points = randn(rng, N_pts)
-    num_coeffs = 4
-    linmap = LinearMap(id, num_coeffs)
-    SetCoeffs(linmap, ones(num_coeffs))
+    num_coeffs = NumCoeffs(linmap)
+    default_coeffs = ones(num_coeffs)
+    SetCoeffs(linmap, default_coeffs)
 
     # Hessians
     eval_pts_lin1, igrad_pts_lin1 = EvaluateInputGrad(linmap, points)
@@ -174,13 +135,13 @@ function TestLinearIdentityMapHess()
 
     mixed_fd_diff = []
     for n in 1:num_coeffs
-        new_coeffs = ones(num_coeffs)
+        new_coeffs = copy(default_coeffs)
         new_coeffs[n] += fd_delta
         SetCoeffs(linmap, new_coeffs)
         _, grad_pts_param_fd = EvaluateInputGrad(linmap, points)
         push!(mixed_fd_diff, (grad_pts_param_fd - igrad_pts_lin1)/fd_delta)
     end
-    SetCoeffs(linmap, ones(num_coeffs))
+    SetCoeffs(linmap, default_coeffs)
     mixed_fd_diff = reduce(hcat, mixed_fd_diff)'
 
     eval_pts_lin3, igrad_pts_lin3, mgrad_pts_lin3 = EvaluateInputGradMixedGrad(linmap, points)
@@ -201,14 +162,11 @@ function TestLinearIdentityMapHess()
     @test all(abs.(mixed_fd_diff2 - mhess_pts_lin4) .< 10*fd_delta)
 end
 
-function TestLinearIdentityMapEvaluateMap()
-    id = IdMapParam()
-    rng = Xoshiro(3984872)
-    N_pts = 1000
+function TestLinearMapEvaluateMap(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000)
     points = randn(rng, N_pts)
-    num_coeffs = 4
-    linmap = LinearMap(id, num_coeffs)
-    SetCoeffs(linmap, ones(num_coeffs))
+    num_coeffs = NumCoeffs(linmap)
+    default_coeffs = ones(num_coeffs)
+    SetCoeffs(linmap, default_coeffs)
 
     ref_eval, ref_pgrad, ref_igrad, ref_mgrad, ref_mhess, ref_ihess = EvaluateParamGradInputGradMixedGradMixedInputHess(linmap, points)
     DF = DerivativeFlags

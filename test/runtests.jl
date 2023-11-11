@@ -4,27 +4,45 @@ include("test_map_creation.jl")
 include("test_map_eval.jl")
 include("test_linear_map.jl")
 @testset "TransportTestbed.jl" begin
-    @testset "Sigmoid Map" begin
-        @testset "Map Creation" begin
-            TestMapCreation()
+    @testset "Sigmoid Map Param" begin
+        @testset "Sigmoid Creation" begin
+            TestSigmoidParamCreation()
         end
-        @testset "Map Evaluation" begin
-            TestMapEvaluation()
+        @testset "Sigmoid Evaluation" begin
+            TestSigmoidParamEvaluation()
         end
-        @testset "Map Derivative" begin
-            TestMapDerivative()
+        @testset "Sigmoid Derivative" begin
+            TestSigmoidParamDerivative()
         end
-        @testset "Map Second Derivative" begin
-            TestMapSecondDerivative()
+        @testset "Sigmoid Second Derivative" begin
+            TestSigmoidParamSecondDerivative()
         end
     end
     @testset "Linear Map" begin
+        rng = Xoshiro(1028302)
+        
         @testset "Identity Map" begin
-            TestIdentityMap()
-            TestLinearIdentityMapEvaluate()
-            TestLinearIdentityMapGrad()
-            TestLinearIdentityMapHess()
-            TestLinearIdentityMapEvaluateMap()
+            TestIdentityMapParam()
+
+            id = IdMapParam()
+            num_coeffs = 4
+            linmap = LinearMap(id, num_coeffs)
+
+            TestLinearMapEvaluate(linmap, rng)
+            TestLinearMapGrad(linmap, rng)
+            TestLinearMapHess(linmap, rng)
+            TestLinearMapEvaluateMap(linmap, rng)
+        end
+
+        @testset "Sigmoid Map" begin
+            num_sigs = 10
+            centers = [[((2i-1)-j)/(j+1) for i in 1:j] for j in 1:num_sigs]
+            sigmap = CreateSigmoidParam(;centers)
+            linmap = LinearMap(sigmap, sigmap.max_order+1)
+            TestLinearMapEvaluate(linmap, rng)
+            TestLinearMapGrad(linmap, rng)
+            TestLinearMapHess(linmap, rng)
+            TestLinearMapEvaluateMap(linmap, rng)
         end
     end
 end

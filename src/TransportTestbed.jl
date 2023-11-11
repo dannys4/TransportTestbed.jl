@@ -52,14 +52,14 @@ function InputDerivatives(flags::__VF)
     return 2
 end
 
-struct SigmoidMap{T<:SigmoidType,U<:TailType} <: MapParam
+struct SigmoidParam{T<:SigmoidType,U<:TailType} <: MapParam
     centers::__VT
     widths::__VT
     weights::__VT
     max_order::Int
     mapLB::Float64
     mapUB::Float64
-    function SigmoidMap{T1,U1}(centers::__VVN, widths::__VVN, weights::__VVN, mapLB, mapUB) where {T1,U1}
+    function SigmoidParam{T1,U1}(centers::__VVN, widths::__VVN, weights::__VVN, mapLB, mapUB) where {T1,U1}
         if isnothing(centers)
             centers = Vector{Vector{Float64}}[]
         end
@@ -86,10 +86,11 @@ struct SigmoidMap{T<:SigmoidType,U<:TailType} <: MapParam
     end
 end
 
-CreateSigmoidMap(;centers = nothing, widths = nothing, weights=nothing, mapLB=-5., mapUB=5.) = SigmoidMap{Logistic, SoftPlus}(centers, widths, weights, mapLB, mapUB)
+CreateSigmoidParam(;centers = nothing, widths = nothing, weights=nothing, mapLB=-5., mapUB=5.) = SigmoidParam{Logistic, SoftPlus}(centers, widths, weights, mapLB, mapUB)
 
-function EvaluateAll(f::SigmoidMap{T,U}, max_order::Int, pts::AbstractVector{<:Real}) where {T,U}
+function EvaluateAll(f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<:Real}) where {T,U}
     output = Matrix{Float64}(undef, max_order+1, length(pts))
+    @assert max_order >= 2 "Required to evaluate at least constant and tails"
     @assert max_order <= f.max_order "Can only evaluate on through order $(f.max_order)"
     for (p,pt) in enumerate(pts) # TODO: Parallel
         pt = pts[p]
@@ -111,9 +112,10 @@ function EvaluateAll(f::SigmoidMap{T,U}, max_order::Int, pts::AbstractVector{<:R
     output
 end
 
-function Derivative(f::SigmoidMap{T,U}, max_order::Int, pts::AbstractVector{<:Real}) where {T,U}
+function Derivative(f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<:Real}) where {T,U}
     output = Matrix{Float64}(undef, max_order+1, length(pts))
     diff   = Matrix{Float64}(undef, max_order+1, length(pts))
+    @assert max_order >= 2 "Required to evaluate at least constant and tails"
     @assert max_order <= f.max_order "Can only evaluate on through order $(f.max_order)"
     for (p,pt) in enumerate(pts) # TODO: Parallel
         pt = pts[p]
@@ -141,10 +143,11 @@ function Derivative(f::SigmoidMap{T,U}, max_order::Int, pts::AbstractVector{<:Re
     output, diff
 end
 
-function SecondDerivative(f::SigmoidMap{T,U}, max_order::Int, pts::AbstractVector{<:Real}) where {T,U}
+function SecondDerivative(f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<:Real}) where {T,U}
     output  = Matrix{Float64}(undef, max_order+1, length(pts))
     diff    = Matrix{Float64}(undef, max_order+1, length(pts))
     diff2   = Matrix{Float64}(undef, max_order+1, length(pts))
+    @assert max_order >= 2 "Required to evaluate at least constant and tails"
     @assert max_order <= f.max_order "Can only evaluate on through order $(f.max_order)"
     for (p,pt) in enumerate(pts) # TODO: Parallel
         pt = pts[p]
@@ -191,6 +194,8 @@ function SetCoeffs(linmap::LinearMap, coeffs::__VR)
 end
 
 GetCoeffs(linmap::LinearMap) = linmap.__coeff
+
+NumCoeffs(linmap::LinearMap) = length(linmap.__coeff)
 
 function Evaluate(f::LinearMap, points::__VR)
     evals = EvaluateAll(f.__map_eval, length(f.__coeff)-1, points)
@@ -262,7 +267,7 @@ function EvaluateMap(f::LinearMap, points::__VR, deriv_flags::__VF)
 end
 EvaluateMap(f::LinearMap, points::__VR, deriv_flag::DerivativeFlags.__DerivativeFlags = DerivativeFlags.None) = EvaluateMap(f, points, [deriv_flag])[]
 
-export SigmoidMap, CreateSigmoidMap, Logistic, SoftPlus
-export LinearMap, GetCoeffs, SetCoeffs
+export SigmoidParam, CreateSigmoidParam, Logistic, SoftPlus
+export LinearMap, GetCoeffs, SetCoeffs, NumCoeffs
 export EvaluateMap, DerivativeFlags
 end

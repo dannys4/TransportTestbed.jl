@@ -1,10 +1,10 @@
-function TestMapCreation()
+function TestSigmoidParamCreation()
     centers = [[1],[2,3]]
     widths = [[1]]
     weights = [[1]]
     e = nothing
     try
-        SigmoidMap{Logistic,SoftPlus}(centers, widths, weights, -1, 1)
+        SigmoidParam{Logistic,SoftPlus}(centers, widths, weights, -1, 1)
     catch ee
         if ee isa ArgumentError
             e = ee
@@ -18,7 +18,7 @@ function TestMapCreation()
     weights = [[1],[1,2,3]]
     e = nothing
     try
-        SigmoidMap{Logistic,SoftPlus}(centers, widths, weights, -1, 1)
+        SigmoidParam{Logistic,SoftPlus}(centers, widths, weights, -1, 1)
     catch ee
         if ee isa ArgumentError
             e = ee
@@ -32,7 +32,7 @@ function TestMapCreation()
     weights = [[1], [0.5,0.5]]
     e = nothing
     try
-        SigmoidMap{Logistic,SoftPlus}(centers, widths, weights, 1, -1)
+        SigmoidParam{Logistic,SoftPlus}(centers, widths, weights, 1, -1)
     catch ee
         if ee isa ArgumentError
             e = ee
@@ -41,8 +41,8 @@ function TestMapCreation()
         end
     end
     @test !isnothing(e)
-    f = SigmoidMap{Logistic,SoftPlus}(centers, widths, weights, -1, 1)
+    f = SigmoidParam{Logistic,SoftPlus}(centers, widths, weights, -1, 1)
     @test f.max_order == 4
-    f = CreateSigmoidMap(;centers, widths, weights)
+    f = CreateSigmoidParam(;centers, widths, weights)
     @test f.max_order == 4
 end
