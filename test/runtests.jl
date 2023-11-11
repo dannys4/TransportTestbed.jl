@@ -24,6 +24,7 @@ include("test_linear_map.jl")
             TestLinearIdentityMapEvaluate()
             TestLinearIdentityMapGrad()
             TestLinearIdentityMapHess()
+            TestLinearIdentityMapEvaluateMap()
         end
     end
 end

@@ -35,13 +35,7 @@ Derivative(::Type{SoftPlus}, pt::Float64) = Evaluate(Logistic, pt)
 SecondDerivative(::Type{SoftPlus}, pt::Float64) = Derivative(Logistic, pt)
 
 module DerivativeFlags
-    const __DerivativeFlags = UInt8
-    const None::__DerivativeFlags = 0
-    const InputGrad::__DerivativeFlags = 1
-    const ParamGrad::__DerivativeFlags = 0
-    const InputHess::__DerivativeFlags = 2
-    const MixedGrad::__DerivativeFlags = 1
-    const MixedHess::__DerivativeFlags = 2
+    @enum __DerivativeFlags None=0 ParamGrad=1 InputGrad=2 MixedGrad=3 MixedHess=4 InputHess=5
 end
 
 __VV = Vector{<:Vector{<:Any}}
@@ -49,7 +43,14 @@ __VT = Vector{Vector{Float64}}
 __VVN = Union{__VV, Nothing}
 __VR = AbstractVector{<:Real}
 __VF = AbstractVector{DerivativeFlags.__DerivativeFlags}
-InputDerivatives(flags::__VF) = maximum(flags)
+
+# Calculates the maximum input derivative based on flags
+function InputDerivatives(flags::__VF)
+    m_flags = UInt8(maximum(flags))
+    m_flags < 2 && return 0
+    m_flags < 4 && return 1
+    return 2
+end
 
 struct SigmoidMap{T<:SigmoidType,U<:TailType} <: MapParam
     centers::__VT
@@ -216,18 +217,19 @@ function EvaluateInputGradHess(f::LinearMap, points::__VR)
     evals'f.__coeff, diff'f.__coeff, diff2'f.__coeff
 end
 
-function EvaluateInputGradMixedHess(f::LinearMap, points::__VR)
+function EvaluateInputGradMixedGrad(f::LinearMap, points::__VR)
     evals, diff, = Derivative(f.__map_eval, length(f.__coeff)-1, points)
     evals'f.__coeff, diff'f.__coeff, diff
 end
 
-function EvaluateParamGradInputGradHessMixedHess(f::LinearMap, points::__VR)
+function EvaluateParamGradInputGradMixedGradMixedInputHess(f::LinearMap, points::__VR)
     evals, diff, diff2 = SecondDerivative(f.__map_eval, length(f.__coeff)-1, points)
-    evals'f.__coeff, evals, diff'f.__coeff, diff2'f.__coeff, diff
+    evals'f.__coeff, evals, diff'f.__coeff, diff, diff2, diff2'f.__coeff
 end
 
-function Evaluate(f::LinearMap, points::__VR, flags::__VF)
-    max_deriv = InputDerivatives(flags)
+function EvaluateMap(f::LinearMap, points::__VR, deriv_flags::__VF)
+    length(deriv_flags) == 0 && return []
+    max_deriv = InputDerivatives(deriv_flags)
     eval = diff = diff2 = nothing
     if max_deriv == 0
         eval = EvaluateAll(f.__map_eval, length(f.__coeff)-1, points)
@@ -239,7 +241,7 @@ function Evaluate(f::LinearMap, points::__VR, flags::__VF)
         @error "Invalid number of derivatives, $max_deriv"
     end
     ret = []
-    for flag in flags
+    for flag in deriv_flags
         if flag == DerivativeFlags.None
             push!(ret, eval'f.__coeff)
         elseif flag == DerivativeFlags.InputGrad
@@ -258,10 +260,9 @@ function Evaluate(f::LinearMap, points::__VR, flags::__VF)
     end
     ret
 end
+EvaluateMap(f::LinearMap, points::__VR, deriv_flag::DerivativeFlags.__DerivativeFlags = DerivativeFlags.None) = EvaluateMap(f, points, [deriv_flag])[]
 
-export SigmoidMap, CreateSigmoidMap, Logistic, SoftPlus, EvaluateAll, Derivative, SecondDerivative
+export SigmoidMap, CreateSigmoidMap, Logistic, SoftPlus
 export LinearMap, GetCoeffs, SetCoeffs
-export Evaluate, EvaluateInputGrad, EvaluateParamGrad
-export EvaluateInputGradHess, EvaluateParamHess
-export EvaluateInputParamGrad, EvaluateInputParamGradHess, EvaluateInputGradMixedHess, EvaluateParamGradInputGradHessMixedHess
+export EvaluateMap, DerivativeFlags
 end

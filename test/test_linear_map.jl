@@ -1,5 +1,18 @@
-import TransportTestbed: EvaluateAll, Derivative, SecondDerivative
+# Map param functions to pirate
+using TransportTestbed: EvaluateAll, Derivative, SecondDerivative
+# Internal functions to test evaluation technique
+using TransportTestbed: Evaluate, EvaluateInputGrad, EvaluateParamGrad, EvaluateInputParamGrad, EvaluateInputGradHess, EvaluateInputGradMixedGrad, EvaluateParamGradInputGradMixedGradMixedInputHess
 struct IdMapParam <: TransportTestbed.MapParam end
+
+# From https://rosettacode.org/wiki/Power_set#Julia
+function powerset(x::Vector{T}) where T
+    result = Vector{T}[[]]
+    for elem in x, j in eachindex(result)
+        push!(result, [result[j] ; elem])
+    end
+    result
+end
+
 function TransportTestbed.EvaluateAll(::IdMapParam, max_order::Int, pts::AbstractVector{<:Real})
     output = Matrix{Float64}(undef, max_order+1, length(pts))
     for j in 1:max_order+1
@@ -170,16 +183,39 @@ function TestLinearIdentityMapHess()
     SetCoeffs(linmap, ones(num_coeffs))
     mixed_fd_diff = reduce(hcat, mixed_fd_diff)'
 
-    eval_pts_lin3, igrad_pts_lin3, mixed_hess_pts_lin3 = EvaluateInputGradMixedHess(linmap, points)
+    eval_pts_lin3, igrad_pts_lin3, mgrad_pts_lin3 = EvaluateInputGradMixedGrad(linmap, points)
     @test all(eval_pts_lin1 .== eval_pts_lin3)
     @test all(igrad_pts_lin1 .== igrad_pts_lin3)
-    @test all(abs.(mixed_fd_diff - mixed_hess_pts_lin3) .< 10*fd_delta)
+    @test all(abs.(mixed_fd_diff - mgrad_pts_lin3) .< 10*fd_delta)
 
     _, pgrad_pts_lin1 = EvaluateParamGrad(linmap, points)
-    eval_pts_lin4, pgrad_pts_lin4, igrad_pts_lin4, ihess_pts_lin4, mixed_hess_pts_lin4 = EvaluateParamGradInputGradHessMixedHess(linmap, points)
+    eval_pts_lin4, pgrad_pts_lin4, igrad_pts_lin4, mgrad_pts_lin4, mhess_pts_lin4, ihess_pts_lin4 = EvaluateParamGradInputGradMixedGradMixedInputHess(linmap, points)
     @test all(eval_pts_lin1 .== eval_pts_lin4)
     @test all(igrad_pts_lin1 .== igrad_pts_lin4)
     @test all(pgrad_pts_lin1 .== pgrad_pts_lin4)
     @test all(ihess_pts_lin2 .== ihess_pts_lin4)
-    @test all(mixed_hess_pts_lin3 .== mixed_hess_pts_lin4)
+    @test all(mgrad_pts_lin3 .== mgrad_pts_lin4)
+    # TODO: Test mhess
+end
+
+function TestLinearIdentityMapEvaluateMap()
+    id = IdMapParam()
+    rng = Xoshiro(3984872)
+    N_pts = 1000
+    points = randn(rng, N_pts)
+    num_coeffs = 4
+    linmap = LinearMap(id, num_coeffs)
+    SetCoeffs(linmap, ones(num_coeffs))
+
+    ref_eval, ref_pgrad, ref_igrad, ref_mgrad, ref_mhess, ref_ihess = EvaluateParamGradInputGradMixedGradMixedInputHess(linmap, points)
+    all_ref_evals = [ref_eval, ref_pgrad, ref_igrad, ref_mgrad, ref_mhess, ref_ihess]
+    all_flags = [DerivativeFlags.None, DerivativeFlags.ParamGrad, DerivativeFlags.InputGrad, DerivativeFlags.MixedGrad, DerivativeFlags.MixedHess, DerivativeFlags.InputHess]
+    idxs = collect(1:length(all_flags))
+    pset = powerset(idxs)
+    for idx in pset
+        evals = EvaluateMap(linmap, points, all_flags[idx])
+        for j in eachindex(idx)
+            @test all(evals[j] .== all_ref_evals[idx[j]])
+        end
+    end
 end
