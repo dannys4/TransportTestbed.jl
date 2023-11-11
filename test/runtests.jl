@@ -4,6 +4,7 @@ include("test_param_creation.jl")
 include("test_sigmoid_eval.jl")
 include("test_linear_map.jl")
 @testset "TransportTestbed.jl" begin
+    TestFakeParamCreation()
     @testset "Sigmoid Map Param" begin
         @testset "Sigmoid Creation" begin
             TestSigmoidParamCreation()

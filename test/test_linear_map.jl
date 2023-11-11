@@ -182,4 +182,6 @@ function TestLinearMapEvaluateMap(linmap::LinearMap, rng::AbstractRNG, N_pts = 1
             @test all(idx_evals[j] .== idx_ref_evals[j])
         end
     end
+    new_eval = EvaluateMap(linmap, points)
+    @test all(new_eval .== ref_eval)
 end

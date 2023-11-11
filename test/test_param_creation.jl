@@ -1,9 +1,9 @@
 struct FakeParam <: TransportTestbed.MapParam end
 struct FakeSigmoid <: TransportTestbed.SigmoidType end
 struct FakeTail <: TransportTestbed.TailType end
-using TransportTestbed: NotImplementedError, Evaluate, EvaluateAll, Derivative, SecondDerivative
+import TransportTestbed: NotImplementedError, Evaluate, EvaluateAll, Derivative, SecondDerivative
 
-function TestFakeCreation()
+function TestFakeParamCreation()
     p = FakeParam()
     s = FakeSigmoid()
     t = FakeTail()

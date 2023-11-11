@@ -1,21 +1,21 @@
 
-function __notImplement(method,::Type{T} = T, ::Type{U} = U) where {T,U}
+function __notImplement(method, T, U)
     throw(NotImplementedError(U, method, T))
 end
-function __notImplementParam(method, T1::Type{T} = T) where {T}
-    __notImplement{T,MapParam}(method, T1)
+function __notImplementParam(method, T)
+    __notImplement(method, T, MapParam)
 end
 
-EvaluateAll(::T, ::Int, ::AbstractVector{<:Real}) where {T<:MapParam} = __notImplementParam{T}(EvaluateAll)
-Derivative(::T, ::Int, ::AbstractVector{<:Real}) where {T<:MapParam} = __notImplementParam{T}(Derivative)
-SecondDerivative(::T, ::Int, ::AbstractVector{<:Real}) where {T<:MapParam} = __notImplementParam{T}(SecondDerivative)
+EvaluateAll(p::MapParam, ::Int, ::AbstractVector{<:Real}) = __notImplementParam(EvaluateAll, typeof(p))
+Derivative(p::MapParam, ::Int, ::AbstractVector{<:Real}) = __notImplementParam(Derivative, typeof(p))
+SecondDerivative(p::MapParam, ::Int, ::AbstractVector{<:Real}) = __notImplementParam(SecondDerivative, typeof(p))
 
-Evaluate(::Type{T}, ::Float64) where {T<:SigmoidType} = __notImplement{T,SigmoidType}(Evaluate)
-Evaluate(::Type{T}, ::Float64) where {T<:TailType} = __notImplement{T,TailType}(Evaluate)
-Derivative(::Type{T}, ::Float64) where {T<:SigmoidType} = __notImplement{T,SigmoidType}(Derivative)
-Derivative(::Type{T}, ::Float64) where {T<:TailType} = __notImplement{T,TailType}(Derivative)
-SecondDerivative(::Type{T}, ::Float64) where {T<:SigmoidType} = __notImplement{T,SigmoidType}(SecondDerivative)
-SecondDerivative(::Type{T}, ::Float64) where {T<:TailType} = __notImplement{T,TailType}(SecondDerivative)
+Evaluate(p::SigmoidType, ::Float64) = __notImplement(Evaluate,typeof(p),SigmoidType)
+Evaluate(p::TailType, ::Float64) = __notImplement(Evaluate,typeof(p),TailType)
+Derivative(p::SigmoidType, ::Float64) = __notImplement(Derivative,typeof(p),SigmoidType)
+Derivative(p::TailType, ::Float64) = __notImplement(Derivative,typeof(p),TailType)
+SecondDerivative(p::SigmoidType, ::Float64) = __notImplement(SecondDerivative,typeof(p),SigmoidType)
+SecondDerivative(p::TailType, ::Float64) = __notImplement(SecondDerivative,typeof(p),TailType)
 
 Evaluate(::Type{Logistic}, pt::Float64) = pt < 0 ? exp(pt)/(1+exp(pt)) : 1/(1+exp(-pt))
 function Derivative(::Type{Logistic}, pt::Float64)
