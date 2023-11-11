@@ -1,8 +1,15 @@
 using TransportTestbed
 using Test, Random
+
+include("test_types.jl")
 include("test_param_creation.jl")
 include("test_sigmoid_eval.jl")
 include("test_linear_map.jl")
+include("test_optim.jl")
+include("test_transport_map.jl")
+
+rng = Xoshiro(1028302)
+
 @testset "TransportTestbed.jl" begin
     TestFakeParamCreation()
     @testset "Sigmoid Map Param" begin
@@ -20,14 +27,10 @@ include("test_linear_map.jl")
         end
     end
     @testset "Linear Map" begin
-        rng = Xoshiro(1028302)
         
         @testset "Identity Map" begin
             TestIdentityMapParam()
-
-            id = IdMapParam()
-            num_coeffs = 4
-            linmap = LinearMap(id, num_coeffs)
+            linmap = DefaultIdentityMap()
 
             TestLinearMapEvaluate(linmap, rng)
             TestLinearMapGrad(linmap, rng)
@@ -36,14 +39,19 @@ include("test_linear_map.jl")
         end
 
         @testset "Sigmoid Map" begin
-            num_sigs = 10
-            centers = [[((2i-1)-j)/(j+1) for i in 1:j] for j in 1:num_sigs]
-            sigmap = CreateSigmoidParam(;centers)
-            linmap = LinearMap(sigmap, sigmap.max_order+1)
+            linmap = DefaultSigmoidMap()
             TestLinearMapEvaluate(linmap, rng)
             TestLinearMapGrad(linmap, rng)
             TestLinearMapHess(linmap, rng)
             TestLinearMapEvaluateMap(linmap, rng)
         end
+    end
+    @testset "TransportMap" begin
+        TestFakeTransportMap()
+        TestLogDeterminant(DefaultIdentityMap(), rng)
+        TestLogDeterminant(DefaultSigmoidMap(), rng)
+    end
+    @testset "Optimization" begin
+        TestKLDiv()
     end
 end

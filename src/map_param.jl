@@ -1,7 +1,3 @@
-
-function __notImplement(method, T, U)
-    throw(NotImplementedError(U, method, T))
-end
 function __notImplementParam(method, T)
     __notImplement(method, T, MapParam)
 end
@@ -32,7 +28,7 @@ Derivative(::Type{SoftPlus}, pt::Float64) = Evaluate(Logistic, pt)
 SecondDerivative(::Type{SoftPlus}, pt::Float64) = Derivative(Logistic, pt)
 
 
-CreateSigmoidParam(;centers = nothing, widths = nothing, weights=nothing, mapLB=-5., mapUB=5.) = SigmoidParam{Logistic, SoftPlus}(centers, widths, weights, mapLB, mapUB)
+CreateSigmoidParam(;centers::__VVN = nothing, widths::__VVN = nothing, weights::__VVN=nothing, mapLB::Real=-5., mapUB::Real=5.) = SigmoidParam{Logistic, SoftPlus}(centers, widths, weights, mapLB, mapUB)
 
 function EvaluateAll(f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<:Real}) where {T,U}
     output = Matrix{Float64}(undef, max_order+1, length(pts))

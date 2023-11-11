@@ -1,10 +1,10 @@
-function SetCoeffs(linmap::LinearMap, coeffs::__VR)
-    linmap.__coeff .= coeffs
+function SetParams(linmap::LinearMap, params::__VR)
+    linmap.__coeff .= params
 end
 
-GetCoeffs(linmap::LinearMap) = linmap.__coeff
+GetParams(linmap::LinearMap) = linmap.__coeff
 
-NumCoeffs(linmap::LinearMap) = length(linmap.__coeff)
+NumParams(linmap::LinearMap) = length(linmap.__coeff)
 
 function Evaluate(f::LinearMap, points::__VR)
     evals = EvaluateAll(f.__map_eval, length(f.__coeff)-1, points)
@@ -62,19 +62,25 @@ function EvaluateMap(f::LinearMap, points::__VR, deriv_flags::__VF)
     else
         @error "Invalid number of derivatives, $max_deriv"
     end
-    ret = []
+    ret = VecOrMat{Float64}[]
     for flag in deriv_flags
         if flag == DerivativeFlags.None
+            @assert !isnothing(eval) ""
             push!(ret, eval'f.__coeff)
         elseif flag == DerivativeFlags.InputGrad
+            @assert !isnothing(diff) ""
             push!(ret, diff'f.__coeff)
         elseif flag == DerivativeFlags.InputHess
+            @assert !isnothing(diff2) ""
             push!(ret, diff2'f.__coeff)
         elseif flag == DerivativeFlags.ParamGrad
+            @assert !isnothing(eval) ""
             push!(ret, eval)
         elseif flag == DerivativeFlags.MixedGrad
+            @assert !isnothing(diff) ""
             push!(ret, diff)
         elseif flag == DerivativeFlags.MixedHess
+            @assert !isnothing(diff2) ""
             push!(ret, diff2)
         else
             @error "Could not find flag $flag"

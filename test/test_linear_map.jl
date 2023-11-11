@@ -1,9 +1,5 @@
-# Map param functions to pirate
-using TransportTestbed: EvaluateAll, Derivative, SecondDerivative
 # Internal functions to test evaluation technique
 using TransportTestbed: Evaluate, EvaluateInputGrad, EvaluateParamGrad, EvaluateInputParamGrad, EvaluateInputGradHess, EvaluateInputGradMixedGrad, EvaluateParamGradInputGradMixedGradMixedInputHess
-
-struct IdMapParam <: TransportTestbed.MapParam end
 
 # From https://rosettacode.org/wiki/Power_set#Julia
 function powerset(x::Vector{T}) where T
@@ -13,37 +9,6 @@ function powerset(x::Vector{T}) where T
     end
     result
 end
-
-function TransportTestbed.EvaluateAll(::IdMapParam, max_order::Int, pts::AbstractVector{<:Real})
-    output = Matrix{Float64}(undef, max_order+1, length(pts))
-    for j in 1:max_order+1
-        output[j,:] = pts
-    end
-    output
-end
-
-function TransportTestbed.Derivative(::IdMapParam, max_order::Int, pts::AbstractVector{<:Real})
-    output = Matrix{Float64}(undef, max_order+1, length(pts))
-    diff = similar(output)
-    for j in 1:max_order+1
-        output[j,:] = pts
-        diff[j,:] .= 1.
-    end
-    output, diff
-end
-
-function TransportTestbed.SecondDerivative(::IdMapParam, max_order::Int, pts::AbstractVector{<:Real})
-    output = Matrix{Float64}(undef, max_order+1, length(pts))
-    diff = similar(output)
-    diff2 = similar(output)
-    for j in 1:max_order+1
-        output[j,:] = pts
-        diff[j,:] .= 1.
-        diff2[j,:] .= 0.
-    end
-    output, diff, diff2
-end
-
 
 function TestIdentityMapParam()
     id = IdMapParam()
@@ -62,30 +27,30 @@ end
 
 function TestLinearMapEvaluate(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000)
     points = randn(rng, N_pts)
-    num_coeffs = NumCoeffs(linmap)
-    @test num_coeffs == length(linmap.__coeff)
+    num_params = NumParams(linmap)
+    @test num_params == length(linmap.__coeff)
 
-    sample_coeffs = 1:num_coeffs
-    SetCoeffs(linmap, sample_coeffs)
-    @test all(GetCoeffs(linmap) .== sample_coeffs)
+    sample_params = 1:num_params
+    SetParams(linmap, sample_params)
+    @test all(GetParams(linmap) .== sample_params)
     eval_pts = Evaluate(linmap, points)
     # Evaluations
     @test size(eval_pts) == (N_pts,)
     scale, shift = 0.75, 0.25
-    SetCoeffs(linmap, scale*sample_coeffs .+ shift)
+    SetParams(linmap, scale*sample_params .+ shift)
     eval_pts_lin = Evaluate(linmap, points)
-    @test all(abs.(eval_pts_lin - (scale*eval_pts + EvaluateAll(linmap.__map_eval, num_coeffs-1, points)'*fill(shift, num_coeffs))) .< 1e-10)
+    @test all(abs.(eval_pts_lin - (scale*eval_pts + EvaluateAll(linmap.__map_eval, num_params-1, points)'*fill(shift, num_params))) .< 1e-10)
 
 end
 
 function TestLinearMapGrad(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000, fd_delta=1e-5)
-    num_coeffs = NumCoeffs(linmap)
+    num_params = NumParams(linmap)
     points = randn(rng, N_pts)
-    default_coeffs = ones(num_coeffs)
-    SetCoeffs(linmap, default_coeffs)
+    default_params = ones(num_params)
+    SetParams(linmap, default_params)
 
     # Gradients
-    SetCoeffs(linmap, ones(num_coeffs))
+    SetParams(linmap, ones(num_params))
     eval_pts_lin1 = Evaluate(linmap, points)
     eval_pts_lin1_fd = Evaluate(linmap, points .+ fd_delta)
     eval_pts_lin2, grad_pts_lin2 = EvaluateInputGrad(linmap, points)
@@ -94,18 +59,18 @@ function TestLinearMapGrad(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000, fd
     @test all(abs.(grad_pts_lin2 - igrad_fd_diff) .< 10*fd_delta)
     eval_pts_lin3, grad_pts_lin3 = EvaluateParamGrad(linmap, points)
     @test all(eval_pts_lin3 .== eval_pts_lin1)
-    @test size(grad_pts_lin3) == (num_coeffs,N_pts)
+    @test size(grad_pts_lin3) == (num_params,N_pts)
     
     eval_pts = Evaluate(linmap, points)
     pgrad_fd_diff = []
-    for n in 1:num_coeffs
-        new_coeffs = copy(default_coeffs)
-        new_coeffs[n] += fd_delta
-        SetCoeffs(linmap, new_coeffs)
+    for n in 1:num_params
+        new_params = copy(default_params)
+        new_params[n] += fd_delta
+        SetParams(linmap, new_params)
         eval_pts_param_fd = Evaluate(linmap, points)
         push!(pgrad_fd_diff, (eval_pts_param_fd - eval_pts)/fd_delta)
     end
-    SetCoeffs(linmap, ones(num_coeffs))
+    SetParams(linmap, ones(num_params))
     pgrad_fd_diff = reduce(hcat, pgrad_fd_diff)'
     
     _, pgrad_pts_lin3 = EvaluateParamGrad(linmap, points)
@@ -120,9 +85,9 @@ end
 
 function TestLinearMapHess(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000, fd_delta=1e-8)
     points = randn(rng, N_pts)
-    num_coeffs = NumCoeffs(linmap)
-    default_coeffs = ones(num_coeffs)
-    SetCoeffs(linmap, default_coeffs)
+    num_params = NumParams(linmap)
+    default_params = ones(num_params)
+    SetParams(linmap, default_params)
 
     # Hessians
     eval_pts_lin1, igrad_pts_lin1 = EvaluateInputGrad(linmap, points)
@@ -134,14 +99,14 @@ function TestLinearMapHess(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000, fd
     @test all(abs.(igrad_fd_diff - ihess_pts_lin2) .< 10*fd_delta)
 
     mixed_fd_diff = []
-    for n in 1:num_coeffs
-        new_coeffs = copy(default_coeffs)
-        new_coeffs[n] += fd_delta
-        SetCoeffs(linmap, new_coeffs)
+    for n in 1:num_params
+        new_params = copy(default_params)
+        new_params[n] += fd_delta
+        SetParams(linmap, new_params)
         _, grad_pts_param_fd = EvaluateInputGrad(linmap, points)
         push!(mixed_fd_diff, (grad_pts_param_fd - igrad_pts_lin1)/fd_delta)
     end
-    SetCoeffs(linmap, default_coeffs)
+    SetParams(linmap, default_params)
     mixed_fd_diff = reduce(hcat, mixed_fd_diff)'
 
     eval_pts_lin3, igrad_pts_lin3, mgrad_pts_lin3 = EvaluateInputGradMixedGrad(linmap, points)
@@ -164,9 +129,9 @@ end
 
 function TestLinearMapEvaluateMap(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000)
     points = randn(rng, N_pts)
-    num_coeffs = NumCoeffs(linmap)
-    default_coeffs = ones(num_coeffs)
-    SetCoeffs(linmap, default_coeffs)
+    num_params = NumParams(linmap)
+    default_params = ones(num_params)
+    SetParams(linmap, default_params)
 
     ref_eval, ref_pgrad, ref_igrad, ref_mgrad, ref_mhess, ref_ihess = EvaluateParamGradInputGradMixedGradMixedInputHess(linmap, points)
     DF = DerivativeFlags

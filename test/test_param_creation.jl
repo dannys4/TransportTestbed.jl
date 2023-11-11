@@ -1,6 +1,3 @@
-struct FakeParam <: TransportTestbed.MapParam end
-struct FakeSigmoid <: TransportTestbed.SigmoidType end
-struct FakeTail <: TransportTestbed.TailType end
 import TransportTestbed: NotImplementedError, Evaluate, EvaluateAll, Derivative, SecondDerivative
 
 function TestFakeParamCreation()

@@ -1,6 +1,7 @@
 module TransportTestbed
-using Random, LinearAlgebra
-import Base: showerror, Exception
+using Random, LinearAlgebra, FastGaussQuadrature
+
+include("utils.jl")
 
 abstract type SigmoidType end
 abstract type Logistic <: SigmoidType end
@@ -8,20 +9,13 @@ abstract type Logistic <: SigmoidType end
 abstract type TailType end
 abstract type SoftPlus <: TailType end
 abstract type MapParam end
-
-struct NotImplementedError{T} <: Base.Exception where {T}
-    parent_class::Type{T}
-    method::Function
-    child_class::Type{<:T}
-end
-NotImplementedError(parent_class::Type{T}, method, child_class::Type{<:T}) where {T} = NotImplementedError{T}(parent_class, method, child_class)
-Base.showerror(io::IO, exc::NotImplementedError{T}) where {T} = print(io, "Class $(exc.child_class) does not implement method $(exc.method) from parent $(exc.parent_class)")
+abstract type TransportMap end
 
 module DerivativeFlags
     @enum __DerivativeFlags None=0 ParamGrad=1 InputGrad=2 MixedGrad=3 MixedHess=4 InputHess=5
 end
 
-__VV = Vector{<:Vector{<:Any}}
+__VV = AbstractVector{<:AbstractVector{<:Real}}
 __VT = Vector{Vector{Float64}}
 __VVN = Union{__VV, Nothing}
 __VR = AbstractVector{<:Real}
@@ -34,9 +28,18 @@ struct SigmoidParam{T<:SigmoidType,U<:TailType} <: MapParam
     max_order::Int
     mapLB::Float64
     mapUB::Float64
-    function SigmoidParam{T1,U1}(centers::__VVN, widths::__VVN, weights::__VVN, mapLB, mapUB) where {T1,U1}
+    function SigmoidParam{T1,U1}(centers::__VVN, widths::__VVN, weights::__VVN, mapLB::Real, mapUB::Real) where {T1,U1}
         if isnothing(centers)
             centers = Vector{Vector{Float64}}[]
+        end
+        if !isa(centers, Vector{Vector{Float64}})
+            new_centers = Vector{Vector{Float64}}(undef, length(centers))
+            for j in eachindex(centers)
+                center = centers[j]
+                @assert center isa AbstractVector{<:Real} ""
+                new_centers[j] = Float64.(center)
+            end
+            centers = new_centers
         end
         if isnothing(widths)
             widths = [ones(j) for j in 1:length(centers)]
@@ -61,7 +64,7 @@ struct SigmoidParam{T<:SigmoidType,U<:TailType} <: MapParam
     end
 end
 
-struct LinearMap{T<:MapParam}
+struct LinearMap{T<:MapParam} <:TransportMap
     __map_eval::T
     __coeff::Vector{Float64}
     function LinearMap(map_eval::U, basisLen::Int) where {U<:MapParam}
@@ -71,8 +74,11 @@ end
 
 include("map_param.jl")
 include("linear_map.jl")
+include("map_objectives.jl")
+include("transport_map.jl")
 
 export SigmoidParam, CreateSigmoidParam, Logistic, SoftPlus
-export LinearMap, GetCoeffs, SetCoeffs, NumCoeffs
+export TransportMap, LinearMap, GetParams, SetParams, NumParams, LogDeterminant, LogDeterminantInputGrad, LogDeterminantParamGrad
 export EvaluateMap, DerivativeFlags
+export KLDiv, BlackboxQuad
 end
