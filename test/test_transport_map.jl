@@ -11,4 +11,8 @@ function TestLogDeterminant(umap::TransportMap, rng::AbstractRNG, N_pts = 1000, 
     fd_logdet = log.(abs.(eval - eval_fd)/fd_delta)
     eval_logdet = LogDeterminant(umap, points)
     @test all(abs.(eval_logdet - fd_logdet) .< 10*fd_delta)
+
+    for j in 1:NumParams(umap)
+        
+    end
 end

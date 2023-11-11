@@ -1,6 +1,7 @@
 using TransportTestbed
 using Test, Random
 
+include("test_utils.jl")
 include("test_types.jl")
 include("test_param_creation.jl")
 include("test_sigmoid_eval.jl")
@@ -11,6 +12,9 @@ include("test_transport_map.jl")
 rng = Xoshiro(1028302)
 
 @testset "TransportTestbed.jl" begin
+    @testset "Utils" begin
+        TestUtils()
+    end
     TestFakeParamCreation()
     @testset "Sigmoid Map Param" begin
         @testset "Sigmoid Creation" begin

@@ -81,4 +81,5 @@ export SigmoidParam, CreateSigmoidParam, Logistic, SoftPlus
 export TransportMap, LinearMap, GetParams, SetParams, NumParams, LogDeterminant, LogDeterminantInputGrad, LogDeterminantParamGrad
 export EvaluateMap, DerivativeFlags
 export KLDiv, BlackboxQuad
+export gaussprobhermite
 end
