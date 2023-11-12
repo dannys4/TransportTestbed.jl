@@ -1,5 +1,5 @@
 using TransportTestbed
-using Test, Random, LinearAlgebra
+using Test, Random, LinearAlgebra, FastGaussQuadrature
 
 include("test_utils.jl")
 include("test_types.jl")

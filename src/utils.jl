@@ -9,13 +9,6 @@ struct NotImplementedError{T} <: Base.Exception where {T}
 end
 Base.showerror(io::IO, exc::NotImplementedError{T}) where {T} = print(io, "Class $(exc.child_class) does not implement method $(exc.method) from parent $(exc.parent_class)")
 
-function gaussprobhermite(n_pts::Int)
-    pts, wts = gausshermite(n_pts)
-    pts *= sqrt(2)
-    wts /= sqrt(pi)
-    pts, wts
-end
-
 function __notImplement(method, child, parent)
     throw(NotImplementedError(parent, method, child))
 end

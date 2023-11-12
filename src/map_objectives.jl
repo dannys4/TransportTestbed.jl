@@ -18,10 +18,11 @@ GetQuad(q::MCQuad) = (q.samples, ones(length(q.samples)))
 GetQuad(q::BlackboxQuad) = q.eval(q.num_quad)
 
 abstract type LossFunction end
-struct KLDiv{T} <: LossFunction
+struct KLDiv{T,U} <: LossFunction
     logdensity::T
-    function KLDiv(logdensity::T1) where {T1}
-        new{T1}(logdensity)
+    gradlogdensity::U
+    function KLDiv(logdensity::T1, gradlogdensity::U1 = nothing) where {T1,U1}
+        new{T1,U1}(logdensity,gradlogdensity)
     end
 end
 struct ParamL2Reg <: LossFunction end
@@ -41,6 +42,7 @@ struct CombinedLoss{P,PReg,SReg} <: LossFunction where {P<:LossFunction, PReg<:L
 end
 
 Loss(loss::LossFunction, ::TransportMap, ::QuadRule) = __notImplement(Loss, typeof(loss), LossFunction)
+LossParamGrad(loss::LossFunction, ::TransportMap, ::QuadRule) = __notImplement(LossParamGrad, typeof(loss), LossFunction)
 
 function Loss(kl::KLDiv, Umap::TransportMap, qrule::QuadRule)
     pts, wts = GetQuad(qrule)
@@ -50,9 +52,23 @@ function Loss(kl::KLDiv, Umap::TransportMap, qrule::QuadRule)
     -(logq_comp_u + logdet_u)'*wts
 end
 
+function LossParamGrad(kl::KLDiv, Umap::TransportMap, qrule::QuadRule)
+    pts, wts = GetQuad(qrule)
+    u_eval, u_pgrad = EvaluateMap(Umap, pts, [DerivativeFlags.None, DerivativeFlags.ParamGrad])
+    logq_comp_u = kl.gradlogdensity(u_eval)
+    logdet_u = LogDeterminant(Umap, logq_comp_u)
+    q_adjoint = u_pgrad*logq_comp_u
+    -(q_adjoint + logdet_u)'*wts
+end
+
 function Loss(::ParamL2Reg, Umap::TransportMap, ::QuadRule)
     params = GetParams(Umap)
     params'params
+end
+
+function LossParamGrad(::ParamL2Reg, Umap::TransportMap, ::QuadRule)
+    params = GetParams(Umap)
+    2*params
 end
 
 function Loss(::Sobolev12Reg, Umap::TransportMap, qrule::QuadRule)

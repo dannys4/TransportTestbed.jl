@@ -1,5 +1,5 @@
 module TransportTestbed
-using Random, LinearAlgebra, FastGaussQuadrature
+using Random, LinearAlgebra
 
 include("utils.jl")
 
@@ -81,5 +81,4 @@ export SigmoidParam, CreateSigmoidParam, Logistic, SoftPlus
 export TransportMap, LinearMap, GetParams, SetParams, NumParams, LogDeterminant, LogDeterminantInputGrad, LogDeterminantParamGrad
 export EvaluateMap, DerivativeFlags
 export BlackboxQuad, MCQuad, Loss, KLDiv, ParamL2Reg, Sobolev12Reg, CombinedLoss
-export gaussprobhermite
 end

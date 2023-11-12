@@ -7,6 +7,7 @@ end
 
 lognormpdf = x -> -(x^2 + log(2pi))/2
 vec_lognormpdf = vec -> map(lognormpdf, vec)
+gaussprobhermite = n->gausshermite(n,normalize=true)
 
 function TestKLDiv(rng::AbstractRNG)
     id = IdMapParam()
@@ -16,7 +17,7 @@ function TestKLDiv(rng::AbstractRNG)
     kl = KLDiv(vec_lognormpdf)
     num_quad_GH = 100
     num_quad_MC = 10_000
-    qrule_GH = BlackboxQuad(TransportTestbed.gaussprobhermite, num_quad_GH)
+    qrule_GH = BlackboxQuad(gaussprobhermite, num_quad_GH)
     qrule_MC = MCQuad(randn(rng, num_quad_MC))
     kl_eval_GH = Loss(kl, linmap, qrule_GH)
     kl_eval_MC = Loss(kl, linmap, qrule_MC)/num_quad_MC
@@ -37,7 +38,7 @@ function TestRegularizers()
 
     param_loss = ParamL2Reg()
     num_quad_GH = 100
-    qrule_GH = BlackboxQuad(TransportTestbed.gaussprobhermite, num_quad_GH)
+    qrule_GH = BlackboxQuad(gaussprobhermite, num_quad_GH)
     param_loss_eval = Loss(param_loss, linmap, qrule_GH)
     @test abs(param_loss_eval - norm(default_params)^2) < 1e-14
 
