@@ -1,10 +1,11 @@
-function SetParams(linmap::LinearMap, params::__VR)
+function SetParams(linmap::LinearMap, params::__VR)::Nothing
     linmap.__coeff .= params
+    nothing
 end
 
-GetParams(linmap::LinearMap) = linmap.__coeff
+GetParams(linmap::LinearMap)::Vector{Float64} = linmap.__coeff
 
-NumParams(linmap::LinearMap) = length(linmap.__coeff)
+NumParams(linmap::LinearMap)::Int = length(linmap.__coeff)
 
 function Evaluate(f::LinearMap, points::__VR)
     evals = EvaluateAll(f.__map_eval, length(f.__coeff)-1, points)

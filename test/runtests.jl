@@ -1,5 +1,5 @@
 using TransportTestbed
-using Test, Random
+using Test, Random, LinearAlgebra
 
 include("test_utils.jl")
 include("test_types.jl")
@@ -58,5 +58,6 @@ rng = Xoshiro(1028302)
     @testset "Optimization" begin
         TestFakeOptimization()
         TestKLDiv(rng)
+        TestRegularizers()
     end
 end

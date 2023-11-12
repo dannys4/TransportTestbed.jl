@@ -10,16 +10,23 @@ end
 
 struct BlackboxQuad{T} <: QuadRule
     eval::T
+    num_quad::Int
 end
 
-GetQuad(q::QuadRule, ::Int) = __notImplement(GetQuad, typeof(q), QuadRule)
-GetQuad(q::MCQuad, N::Int) = (q.samples[1:N], ones(N))
-GetQuad(q::BlackboxQuad, N::Int) = q.eval(N)
+GetQuad(q::QuadRule) = __notImplement(GetQuad, typeof(q), QuadRule)
+GetQuad(q::MCQuad) = (q.samples, ones(length(q.samples)))
+GetQuad(q::BlackboxQuad) = q.eval(q.num_quad)
 
 abstract type LossFunction end
-struct KLDiv <: LossFunction end
+struct KLDiv{T} <: LossFunction
+    logdensity::T
+    function KLDiv(logdensity::T1) where {T1}
+        new{T1}(logdensity)
+    end
+end
 struct ParamL2Reg <: LossFunction end
-struct Sobolev2Reg <: LossFunction end
+# Imitates W_{1,2}, i.e. ||T||_{W_{1,2}}^2 = ||T||_{L_2}^2 + ||T'||_{L_2}^2
+struct Sobolev12Reg <: LossFunction end
 
 struct CombinedLoss{P,PReg,SReg} <: LossFunction where {P<:LossFunction, PReg<:LossFunction, SReg<:LossFunction}
     weight_primary::Float64
@@ -28,17 +35,35 @@ struct CombinedLoss{P,PReg,SReg} <: LossFunction where {P<:LossFunction, PReg<:L
     eval_p_reg::PReg
     weight_sob_reg::Float64
     eval_sob_reg::SReg
-    function CombinedLoss(primary::P1, param_reg::PReg1 = ParamL2Reg(), sob_reg::SReg1 = Sobolev2Reg(); weight_primary = 1.0, weight_param_reg = 0., weight_sobolev_reg = 0.) where {P1,PReg1,SReg1}
+    function CombinedLoss(primary::P1, param_reg::PReg1 = ParamL2Reg(), sob_reg::SReg1 = Sobolev12Reg(); weight_primary = 1.0, weight_param_reg = 0., weight_sobolev_reg = 0.) where {P1,PReg1,SReg1}
         new{P1,PReg1,SReg1}(weight_primary, primary, weight_param_reg, param_reg, weight_sobolev_reg, sob_reg)
     end
 end
 
-Loss(loss::LossFunction, ::TransportMap, _, ::QuadRule, ::Int) = __notImplement(Loss, typeof(loss), LossFunction)
+Loss(loss::LossFunction, ::TransportMap, ::QuadRule) = __notImplement(Loss, typeof(loss), LossFunction)
 
-function Loss(::KLDiv, Umap::TransportMap, logdensity::D, qrule::QuadRule, num_quad::Int) where {D}
-    pts, wts = GetQuad(qrule, num_quad)
+function Loss(kl::KLDiv, Umap::TransportMap, qrule::QuadRule)
+    pts, wts = GetQuad(qrule)
     u_eval = EvaluateMap(Umap, pts)
-    logq_comp_u = logdensity(u_eval)
+    logq_comp_u = kl.logdensity(u_eval)
     logdet_u = LogDeterminant(Umap, logq_comp_u)
     -(logq_comp_u + logdet_u)'*wts
+end
+
+function Loss(::ParamL2Reg, Umap::TransportMap, ::QuadRule)
+    params = GetParams(Umap)
+    params'params
+end
+
+function Loss(::Sobolev12Reg, Umap::TransportMap, qrule::QuadRule)
+    pts, wts = GetQuad(qrule)
+    u_eval, u_igrad = EvaluateMap(Umap, pts, [DerivativeFlags.None, DerivativeFlags.InputGrad])
+    sum((u*u + up*up)*w for (u,up,w) in zip(u_eval, u_igrad, wts))
+end
+
+function Loss(loss::CombinedLoss, Umap::TransportMap, qrule::QuadRule)
+    primary = loss.weight_primary*Loss(loss.eval_primary, Umap, qrule)
+    param_reg = loss.weight_p_reg*Loss(loss.eval_p_reg, Umap, qrule)
+    sob_reg = loss.weight_sob_reg*Loss(loss.eval_sob_reg, Umap, qrule)
+    primary + param_reg + sob_reg
 end

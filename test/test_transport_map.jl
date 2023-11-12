@@ -1,5 +1,8 @@
 function TestFakeTransportMap()
     umap = FakeTransport()
+    @test_throws NotImplementedError GetParams(umap)
+    @test_throws NotImplementedError NumParams(umap)
+    @test_throws NotImplementedError SetParams(umap, [1.,2.,3.])
     @test_throws NotImplementedError EvaluateMap(umap, [1.,2.,3.])
 end
 

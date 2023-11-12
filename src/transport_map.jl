@@ -6,6 +6,9 @@ function InputDerivatives(flags::__VF)
     m_flags < 5 && return 1
     return 2
 end
+GetParams(umap::TransportMap)::Vector{Float64} = __notImplement(GetParams, typeof(umap), TransportMap)
+NumParams(umap::TransportMap)::Int = __notImplement(NumParams, typeof(umap), TransportMap)
+SetParams(umap::TransportMap, ::__VR)::Nothing = __notImplement(SetParams, typeof(umap), TransportMap)
 
 EvaluateMap(p::TransportMap, ::__VR, ::__VF) = __notImplement(EvaluateMap, typeof(p), TransportMap)
 EvaluateMap(f::TransportMap, points::__VR, deriv_flag::DerivativeFlags.__DerivativeFlags = DerivativeFlags.None) = EvaluateMap(f, points, [deriv_flag])[]

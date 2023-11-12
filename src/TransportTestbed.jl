@@ -80,6 +80,6 @@ include("transport_map.jl")
 export SigmoidParam, CreateSigmoidParam, Logistic, SoftPlus
 export TransportMap, LinearMap, GetParams, SetParams, NumParams, LogDeterminant, LogDeterminantInputGrad, LogDeterminantParamGrad
 export EvaluateMap, DerivativeFlags
-export KLDiv, BlackboxQuad, MCQuad, Loss
+export BlackboxQuad, MCQuad, Loss, KLDiv, ParamL2Reg, Sobolev12Reg, CombinedLoss
 export gaussprobhermite
 end
