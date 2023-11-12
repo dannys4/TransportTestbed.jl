@@ -5,8 +5,8 @@ function TestFakeOptimization()
     @test_throws NotImplementedError Loss(ell, FakeTransport(), q)
 end
 
-normpdf = x -> exp(-x^2/2)/sqrt(2pi)
-vec_lognormpdf = vec -> map(log∘normpdf, vec)
+lognormpdf = x -> -(x^2 + log(2pi))/2
+vec_lognormpdf = vec -> map(lognormpdf, vec)
 
 function TestKLDiv(rng::AbstractRNG)
     id = IdMapParam()
@@ -22,7 +22,7 @@ function TestKLDiv(rng::AbstractRNG)
     kl_eval_MC = Loss(kl, linmap, qrule_MC)/num_quad_MC
     
     # For identity map and gaussian reference, kl should evaluate the entropy of the gaussian
-    gauss_entropy = log(sqrt(2*pi*exp(1)))
+    gauss_entropy = log(2*pi*exp(1))/2
 
     @test abs(kl_eval_GH - gauss_entropy)/gauss_entropy < 1e-8
     @test abs(kl_eval_MC - gauss_entropy)/gauss_entropy < 10/sqrt(num_quad_MC)

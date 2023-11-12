@@ -62,8 +62,8 @@ function Loss(::Sobolev12Reg, Umap::TransportMap, qrule::QuadRule)
 end
 
 function Loss(loss::CombinedLoss, Umap::TransportMap, qrule::QuadRule)
-    primary = loss.weight_primary*Loss(loss.eval_primary, Umap, qrule)
-    param_reg = loss.weight_p_reg*Loss(loss.eval_p_reg, Umap, qrule)
-    sob_reg = loss.weight_sob_reg*Loss(loss.eval_sob_reg, Umap, qrule)
-    primary + param_reg + sob_reg
+    primary = Loss(loss.eval_primary, Umap, qrule)
+    param_reg = Loss(loss.eval_p_reg, Umap, qrule)
+    sob_reg = Loss(loss.eval_sob_reg, Umap, qrule)
+    primary*loss.weight_primary + param_reg*loss.weight_p_reg + sob_reg*loss.weight_sob_reg
 end
