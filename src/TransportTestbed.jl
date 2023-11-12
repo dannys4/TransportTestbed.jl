@@ -12,7 +12,7 @@ abstract type MapParam end
 abstract type TransportMap end
 
 module DerivativeFlags
-    @enum __DerivativeFlags None=0 ParamGrad=1 InputGrad=2 MixedGrad=3 MixedHess=4 InputHess=5
+    @enum __DerivativeFlags ErrorFlag=0 None=1 ParamGrad=2 InputGrad=3 MixedGrad=4 MixedHess=5 InputHess=6
 end
 
 __VV = AbstractVector{<:AbstractVector{<:Real}}

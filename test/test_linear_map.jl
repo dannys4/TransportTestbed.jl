@@ -149,4 +149,6 @@ function TestLinearMapEvaluateMap(linmap::LinearMap, rng::AbstractRNG, N_pts = 1
     end
     new_eval = EvaluateMap(linmap, points)
     @test all(new_eval .== ref_eval)
+    @test_throws ArgumentError EvaluateMap(linmap, points, DerivativeFlags.ErrorFlag)
+    @test_throws ArgumentError EvaluateMap(linmap, points, [DerivativeFlags.ErrorFlag, DerivativeFlags.None])
 end
