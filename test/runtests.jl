@@ -56,6 +56,7 @@ rng = Xoshiro(1028302)
         TestLogDeterminant(DefaultSigmoidMap(), rng)
     end
     @testset "Optimization" begin
-        TestKLDiv()
+        TestFakeOptimization()
+        TestKLDiv(rng)
     end
 end

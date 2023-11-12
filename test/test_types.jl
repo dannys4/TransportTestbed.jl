@@ -5,6 +5,9 @@ struct FakeParam <: TransportTestbed.MapParam end
 struct FakeSigmoid <: TransportTestbed.SigmoidType end
 struct FakeTail <: TransportTestbed.TailType end
 struct FakeTransport <: TransportTestbed.TransportMap end
+struct FakeQuadRule <: TransportTestbed.QuadRule end
+struct FakeLossFunction <: TransportTestbed.LossFunction end
+
 
 struct IdMapParam <: TransportTestbed.MapParam end
 

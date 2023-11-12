@@ -11,7 +11,7 @@ function LogDeterminantInputGrad(umap::TransportMap, pts::Vector{Float64})
     ihess ./ igrad
 end
 
-function LogDeteriminantParamGrad(umap::TransportMap, pts::Vector{Float64})
+function LogDeterminantParamGrad(umap::TransportMap, pts::Vector{Float64})
     igrad, mgrad = EvaluateMap(umap, pts, [DerivativeFlags.InputGrad, DerivativeFlags.MixedGrad])
-    mgrad ./ igrad
+    mgrad ./ igrad'
 end

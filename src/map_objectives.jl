@@ -2,15 +2,18 @@ abstract type QuadRule end
 
 # Quadrature needs to be more carful in multiple dimensions
 struct MCQuad{T} <: QuadRule
-    samples::Vector{Float64}
+    samples::Vector{T}
+    function MCQuad(samples::Vector{U}) where {U}
+        new{U}(samples)
+    end
 end
 
 struct BlackboxQuad{T} <: QuadRule
     eval::T
 end
 
-GetQuad(q::QuadRule, ::Int) = __notImplement(getQuad, typeof(q), QuadRule)
-GetQuad(q::MCQuad, N::Int) = (q.samples[1:N], fill(1/N, N))
+GetQuad(q::QuadRule, ::Int) = __notImplement(GetQuad, typeof(q), QuadRule)
+GetQuad(q::MCQuad, N::Int) = (q.samples[1:N], ones(N))
 GetQuad(q::BlackboxQuad, N::Int) = q.eval(N)
 
 abstract type LossFunction end
