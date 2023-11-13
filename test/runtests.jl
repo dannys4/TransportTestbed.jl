@@ -59,5 +59,6 @@ rng = Xoshiro(1028302)
         TestFakeOptimization()
         TestKLDiv(rng)
         TestRegularizers()
+        TestLossParamGrad()
     end
 end
