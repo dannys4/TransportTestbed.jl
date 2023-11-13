@@ -93,9 +93,6 @@ function TestLossParamGrad(fd_delta = 1e-5)
         end
         fd_diff = (loss_fd_fix .- loss_eval)/fd_delta
         max_err = maximum(abs.(loss_pgrad - fd_diff))
-        @info "attempt:" j loss max_err
-        @info "" loss_pgrad
-        @info "" fd_diff
         @test all(max_err .< 10*fd_delta)
     end
 end
