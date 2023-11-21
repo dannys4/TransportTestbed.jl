@@ -1,4 +1,4 @@
-using TransportTestbed, GLMakie, Random, Distributions, Optimization, OptimizationOptimJL, FastGaussQuadrature
+using TransportTestbed, GLMakie, Random, Distributions, Optimization, OptimizationOptimJL, FastGaussQuadrature, Roots
 rng = Xoshiro(392204)
 N_samples = 20_000
 stds = [1.5, 0.5]
@@ -36,9 +36,6 @@ axislegend(position=:lt)
 fig
 
 ##
-sp = TransportTestbed.SoftPlus
-softplus_eval = (t::Float64) -> TransportTestbed.Evaluate(sp, t)
-softplus_grad = (t::Float64) -> TransportTestbed.Derivative(sp, t)
 function TrainMap_PosConstraint(alg, umap, qrule, loss)
     vars = (umap, qrule, loss)
     function EvalLoss(params::Vector{Float64}, p)
@@ -77,9 +74,9 @@ alg = LBFGS()
 normdist = Normal()
 max_degree = 10
 mapLB, mapUB = -0.4, 1.6
-bound_dist = mapUB-mapLB
+left_tailwidth, right_tailwidth = 3, 4
 centers = [quantile(norm_dist, (1:j)/(j+1)) for j in 1:max_degree]
-map_param = CreateSigmoidParam(;centers, mapLB, mapUB)
+map_param = CreateSigmoidParam(;centers, mapLB, mapUB, left_tailwidth, right_tailwidth)
 linmap = LinearMap(map_param, NumParams(map_param))
 kl = KLDiv(x->logpdf.(gmm,x), x->gradlogpdf.(gmm, x))
 # N_MC = 20_000
@@ -96,10 +93,31 @@ axislegend()
 fig
 
 ##
+function InverseMap(umap::TransportMap, point::Real; lb::Real=-20, ub::Real=20, maxiters=3)
+    f = x->EvaluateMap(umap, [x])[]-point
+    tracks = Roots.Tracks()
+    x_rough = find_zero(f, (lb, ub), Bisection(); maxiters, tracks)
+    (tracks.convergence_flag != :not_converged) && return x_rough
+    fp = x->EvaluateMap(umap, [x], DerivativeFlags.InputGrad)[]
+    x_fine = find_zero((f,fp), x_rough, Roots.Newton())
+    x_fine
+end
+
+function TransportLogpdf_from_dens(umap::TransportMap, reference::Distribution, points::AbstractVector; inverse_kwargs...)
+    imap = point->InverseMap(umap, point; inverse_kwargs...)
+    map_points = imap.(points)
+    eval_ref_logpdf = logpdf.(reference, map_points)
+    eval_logdet = LogDeterminant(umap, map_points)
+    eval_ref_logpdf - eval_logdet
+end
+
+##
 test_set = randn(rng, 50_000)
 eval_test = EvaluateMap(linmap, test_set)
+transport_logpdf = TransportLogpdf_from_dens(linmap, norm_dist, xgrid)
 fig = Figure(); ax = Axis(fig[1,1])
-density!(ax, eval_test, label="Test evaluations")
-lines!(ax, xgrid, pdf.(gmm, xgrid), label="Actual PDF")
+density!(ax, eval_test, label="Test evaluations", color=(:red,0.5))
+lines!(ax, xgrid, exp.(transport_logpdf), label="Transport PDF", linewidth=3)
+lines!(ax, xgrid, pdf.(gmm, xgrid), label="Actual PDF", linewidth=3, linestyle=:dash)
 axislegend()
 fig

@@ -9,12 +9,14 @@ include("test_linear_map.jl")
 include("test_map_objectives.jl")
 include("test_transport_map.jl")
 include("test_optimizer.jl")
+include("test_quad.jl")
 
 rng = Xoshiro(1028302)
 
 @testset "TransportTestbed.jl" begin
     @testset "Utils" begin
         TestUtils()
+        TestQuadrature(rng)
     end
     TestFakeParamCreation()
     @testset "Sigmoid Map Param" begin

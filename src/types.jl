@@ -28,7 +28,9 @@ struct SigmoidParam{T<:SigmoidType,U<:TailType} <: MapParam
     max_order::Int
     mapLB::Float64
     mapUB::Float64
-    function SigmoidParam{T1,U1}(centers::__VVN, widths::__VVN, weights::__VVN, mapLB::Real, mapUB::Real) where {T1,U1}
+    left_tailwidth::Float64
+    right_tailwidth::Float64
+    function SigmoidParam{T1,U1}(centers::__VVN, widths::__VVN, weights::__VVN, mapLB::Real, mapUB::Real, left_tailwidth::Real, right_tailwidth::Real) where {T1,U1}
         if isnothing(centers)
             centers = Vector{Vector{Float64}}[]
         end
@@ -60,7 +62,7 @@ struct SigmoidParam{T<:SigmoidType,U<:TailType} <: MapParam
         if mapLB > mapUB
             throw(ArgumentError("mapLB must be smaller than mapUB"))
         end
-        new{T1,U1}(centers, widths, weights, length(centers)+2, mapLB, mapUB)
+        new{T1,U1}(centers, widths, weights, length(centers)+2, mapLB, mapUB, left_tailwidth, right_tailwidth)
     end
 end
 
