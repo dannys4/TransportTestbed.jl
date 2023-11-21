@@ -7,7 +7,7 @@ struct FakeTail <: TransportTestbed.TailType end
 struct FakeTransport <: TransportTestbed.TransportMap end
 struct FakeQuadRule <: TransportTestbed.QuadRule end
 struct FakeLossFunction <: TransportTestbed.LossFunction end
-
+struct FakeOptimizer <: TransportTestbed.Optimizer end
 
 struct IdMapParam <: TransportTestbed.MapParam end
 

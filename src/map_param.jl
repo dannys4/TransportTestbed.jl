@@ -23,12 +23,14 @@ function SecondDerivative(::Type{Logistic}, pt::Float64)
     f*(1-f)*(1-2*f)
 end
 
-Evaluate(::Type{SoftPlus}, pt::Float64) = log(1+exp(pt))
+tail_width = 1.
+
+Evaluate(::Type{SoftPlus}, pt::Float64) = pt < 0 ? log(1+exp(pt)) : -log(exp(-pt)/(1+exp(-pt)))
 Derivative(::Type{SoftPlus}, pt::Float64) = Evaluate(Logistic, pt)
 SecondDerivative(::Type{SoftPlus}, pt::Float64) = Derivative(Logistic, pt)
 
-
 CreateSigmoidParam(;centers::__VVN = nothing, widths::__VVN = nothing, weights::__VVN=nothing, mapLB::Real=-5., mapUB::Real=5.) = SigmoidParam{Logistic, SoftPlus}(centers, widths, weights, mapLB, mapUB)
+NumParams(f::SigmoidParam) = f.max_order+1
 
 function EvaluateAll(f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<:Real}) where {T,U}
     output = Matrix{Float64}(undef, max_order+1, length(pts))
@@ -37,8 +39,8 @@ function EvaluateAll(f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<
     for (p,pt) in enumerate(pts) # TODO: Parallel
         pt = pts[p]
         output[1,p] = 1
-        output[2,p] = -Evaluate(U, -(pt - f.mapLB))
-        output[3,p] =  Evaluate(U,  (pt - f.mapUB))
+        output[2,p] = -Evaluate(U, -tail_width*(pt - f.mapLB))
+        output[3,p] =  Evaluate(U,  tail_width*(pt - f.mapUB))
         for order = 4:max_order+1
             output[order,p] = 0.
             order_idx = order - 3
@@ -62,11 +64,11 @@ function Derivative(f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<:
     for (p,pt) in enumerate(pts) # TODO: Parallel
         pt = pts[p]
         output[1,p] = 1
-        output[2,p] = -Evaluate(U, -(pt - f.mapLB))
-        output[3,p] =  Evaluate(U,  (pt - f.mapUB))
+        output[2,p] = -Evaluate(U, -tail_width*(pt - f.mapLB))
+        output[3,p] =  Evaluate(U,  tail_width*(pt - f.mapUB))
         diff[1,p] = 0.
-        diff[2,p] = Derivative(U, -(pt - f.mapLB))
-        diff[3,p] = Derivative(U,  (pt - f.mapUB))
+        diff[2,p] = tail_width*Derivative(U, -tail_width*(pt - f.mapLB))
+        diff[3,p] = tail_width*Derivative(U,  tail_width*(pt - f.mapUB))
         for order = 4:max_order+1
             output[order,p] = 0.
             diff[order,p]   = 0.
@@ -94,14 +96,14 @@ function SecondDerivative(f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVec
     for (p,pt) in enumerate(pts) # TODO: Parallel
         pt = pts[p]
         output[1,p] = 1
-        output[2,p] = -Evaluate(U, -(pt - f.mapLB))
-        output[3,p] =  Evaluate(U,  (pt - f.mapUB))
+        output[2,p] = -Evaluate(U, -tail_width*(pt - f.mapLB))
+        output[3,p] =  Evaluate(U,  tail_width*(pt - f.mapUB))
         diff[1,p] = 0.
-        diff[2,p] = Derivative(U, -(pt - f.mapLB))
-        diff[3,p] = Derivative(U,  (pt - f.mapUB))
+        diff[2,p] = tail_width*Derivative(U, -tail_width*(pt - f.mapLB))
+        diff[3,p] = tail_width*Derivative(U,  tail_width*(pt - f.mapUB))
         diff2[1,p] = 0.
-        diff2[2,p] = -SecondDerivative(U, -(pt - f.mapLB))
-        diff2[3,p] =  SecondDerivative(U,  (pt - f.mapUB))
+        diff2[2,p] = -tail_width*tail_width*SecondDerivative(U, -tail_width*(pt - f.mapLB))
+        diff2[3,p] =  tail_width*tail_width*SecondDerivative(U,  tail_width*(pt - f.mapUB))
         for order = 4:max_order+1
             output[order,p] = 0.
             diff[order,p]   = 0.

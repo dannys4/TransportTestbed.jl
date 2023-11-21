@@ -1,4 +1,4 @@
-function TestFakeOptimization()
+function TestFakeObjectives()
     q = FakeQuadRule()
     @test_throws NotImplementedError TransportTestbed.GetQuad(q)
     ell = FakeLossFunction()

@@ -6,8 +6,9 @@ include("test_types.jl")
 include("test_param_creation.jl")
 include("test_sigmoid_eval.jl")
 include("test_linear_map.jl")
-include("test_optim.jl")
+include("test_map_objectives.jl")
 include("test_transport_map.jl")
+include("test_optimizer.jl")
 
 rng = Xoshiro(1028302)
 
@@ -56,9 +57,14 @@ rng = Xoshiro(1028302)
         TestLogDeterminant(DefaultSigmoidMap(), rng)
     end
     @testset "Optimization" begin
-        TestFakeOptimization()
-        TestKLDiv(rng)
-        TestRegularizers()
-        TestLossParamGrad()
+        @testset "Objectives" begin
+            TestFakeObjectives()
+            TestKLDiv(rng)
+            TestRegularizers()
+            TestLossParamGrad()
+        end
+        @testset "Optimizers" begin
+            TestFakeOptimizer()
+        end
     end
 end
