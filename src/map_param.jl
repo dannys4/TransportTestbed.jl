@@ -23,7 +23,7 @@ function SecondDerivative(::Type{Logistic}, pt::Float64)
     f*(1-f)*(1-2*f)
 end
 
-tail_width = 1.
+tail_width = 6.
 
 Evaluate(::Type{SoftPlus}, pt::Float64) = pt < 0 ? log(1+exp(pt)) : -log(exp(-pt)/(1+exp(-pt)))
 Derivative(::Type{SoftPlus}, pt::Float64) = Evaluate(Logistic, pt)
