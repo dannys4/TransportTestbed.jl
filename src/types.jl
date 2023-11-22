@@ -135,3 +135,11 @@ struct Nesterov <: Optimizer
     end
 end
 struct Armijo <: LineSearch end
+struct BifidelityType{T,U,V} <: T where {T,U<:T,V<:T}
+    lo::U
+    hi::V
+end
+
+struct TrustRegion{U,V} <: Optimizer where {U,V}
+    lo_solver::U
+end
