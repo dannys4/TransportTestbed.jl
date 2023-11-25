@@ -1,18 +1,5 @@
-using GLMakie, QuasiMonteCarlo, Random, Distributions
+using GLMakie, QuasiMonteCarlo, Random, Distributions, JLD2
 include("gmm_base.jl")
-
-struct QuadRulePlotArgs
-    name::String
-    color
-    marker::Symbol
-end
-
-struct QuadRuleBench
-    N::Int
-    qrule::TransportTestbed.QuadRule
-    plot_args::QuadRulePlotArgs
-    error::Ref{Float64}
-end
 
 COLORS = Makie.wong_colors()
 
@@ -90,10 +77,37 @@ function MakeQuadRules(
     quadrules
 end
 
-quad_descs = [
-    (:quadrature,), (:montecarlo,), (:qmc,),
-    (:hybrid_mc,0.9), (:hybrid_mc,0.75), (:hybrid_mc,0.5), (:hybrid_mc,0.25), (:hybrid_mc,0.1),
-    (:hybrid_qmc,0.9), (:hybrid_qmc,0.75), (:hybrid_qmc,0.5), (:hybrid_qmc,0.25), (:hybrid_qmc,0.1),
-]
-n_pt_range = 10 .^ (1:0.25:3)
-quadrules = MakeQuadRules(rng, 10:10:100, quad_descs)
+function KolmogorovSmirnov(umap::TransportMap, target_dist::Distribution, eval_pts::AbstractVector)
+    N_pts = length(eval_pts)
+    map_eval = EvaluateMap(umap, eval_pts)
+    sort!(map_eval)
+    e_cdf = collect((1:N_pts)/N_pts)
+    true_cdf = cdf(target_dist, map_eval)
+    maximum(abs.(e_cdf - true_cdf))
+end
+
+function AssessError!(error_ref::Ref{Float64}, qrule, target_dist::Distribution, error_pts, loss = :kl, alg = LBFGS())
+    loss != :kl && throw(ArgumentError("Only accept loss as :kl, given $loss"))
+    loss_obj = KLDiv(x->logpdf.(target_dist, x), x->gradlogpdf.(target_dist, x))
+    umap = DefaultMap()
+    TrainMap_PosConstraint!(alg, umap, qrule, loss_obj, false)
+    error_ref[] = KolmogorovSmirnov(umap, target_dist, error_pts)
+end
+
+function CreateQuadRuleErrors(rng::AbstractRNG, target_dist::Distribution, N_error_pts::Int = 10_000)
+    quad_descs = [
+        (:quadrature,), (:montecarlo,), (:qmc,),
+        (:hybrid_mc,0.9), (:hybrid_mc,0.75), (:hybrid_mc,0.5), (:hybrid_mc,0.25), (:hybrid_mc,0.1),
+        (:hybrid_qmc,0.9), (:hybrid_qmc,0.75), (:hybrid_qmc,0.5), (:hybrid_qmc,0.25), (:hybrid_qmc,0.1),
+    ]
+    n_pt_range = round.(Int, 10 .^ (1:0.25:3))
+    quadrules = MakeQuadRules(rng, n_pt_range, quad_descs)
+    error_pts = randn(rng, N_error_pts)
+    for qrule_bench in quadrules
+        AssessError!(qrule_bench.error, qrule_bench.qrule, target_dist, error_pts)
+    end
+    quadrules
+end
+
+quadrules = CreateQuadRuleErrors(rng, gmm)
+jldsave(joinpath(@__DIR__, "data/quadrule_error.jld2"); quadrules)

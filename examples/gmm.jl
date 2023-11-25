@@ -25,13 +25,7 @@ fig
 
 ## From density
 alg = LBFGS()
-normdist = Normal()
-max_degree = 10
-mapLB, mapUB = -0.4, 1.6
-left_tailwidth, right_tailwidth = 3, 4
-centers = [quantile(norm_dist, (1:j) / (j + 1)) for j in 1:max_degree]
-map_param = CreateSigmoidParam(; centers, mapLB, mapUB, left_tailwidth, right_tailwidth)
-linmap = LinearMap(map_param, NumParams(map_param))
+linmap = DefaultMap()
 kl = KLDiv(x -> logpdf.(gmm, x), x -> gradlogpdf.(gmm, x))
 N_quad, qrule = 200, nothing
 # Change this as needed
@@ -41,7 +35,7 @@ if qrule_choice == :quadrature
 elseif qrule_choice == :montecarlo
     qrule = MCQuad(randn(rng, N_quad))
 end
-TrainMap_PosConstraint(alg, linmap, qrule, kl)
+TrainMap_PosConstraint!(alg, linmap, qrule, kl)
 
 evals = EvaluateMap(linmap, xgrid)
 fig = Figure()
