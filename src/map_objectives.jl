@@ -1,10 +1,10 @@
 GetQuad(q::QuadRule) = __notImplement(GetQuad, typeof(q), QuadRule)
-GetQuad(q::MCQuad) = (q.samples, fill(1/length(q.samples),length(q.samples)))
+GetQuad(q::MCQuad) = (q.samples, fill(1 / length(q.samples), length(q.samples)))
 GetQuad(q::BlackboxQuad) = q.eval(q.num_quad)
 function GetQuad(q::QuadPair)
     pts1, wts1 = GetQuad(q.quad1)
     pts2, wts2 = GetQuad(q.quad2)
-    vcat(pts1, pts2), vcat(q.quad1_weight*wts1,q.quad2_weight*wts2)
+    vcat(pts1, pts2), vcat(q.quad1_weight * wts1, q.quad2_weight * wts2)
 end
 
 function Loss(loss::LossFunction, ::TransportMap, ::QuadRule)
@@ -19,19 +19,25 @@ function Loss(kl::KLDiv, Umap::TransportMap, qrule::QuadRule)
     u_eval = EvaluateMap(Umap, pts)
     logq_comp_u = kl.logdensity(u_eval)
     logdet_u = LogDeterminant(Umap, pts)
-    -sum((logq_j + logdet_j) * w_j for
-         (logq_j, logdet_j, w_j) in zip(logq_comp_u, logdet_u, wts))
+    -sum(
+        (logq_j + logdet_j) * w_j for
+        (logq_j, logdet_j, w_j) in zip(logq_comp_u, logdet_u, wts)
+    )
 end
 
 function LossParamGrad(kl::KLDiv, Umap::TransportMap, qrule::QuadRule)
     pts, wts = GetQuad(qrule)
-    u_eval, u_pgrad = EvaluateMap(Umap,
-        pts,
-        [DerivativeFlags.None, DerivativeFlags.ParamGrad])
+    u_eval, u_pgrad = EvaluateMap(
+        Umap, pts, [DerivativeFlags.None, DerivativeFlags.ParamGrad]
+    )
     logq_comp_u_pgrad = kl.gradlogdensity(u_eval)
     logdet_u_pgrad = LogDeterminantParamGrad(Umap, pts)
-    ret = [-sum((u_pgrad[i, j] * logq_comp_u_pgrad[j] + logdet_u_pgrad[i, j]) * wts[j] for
-                j in axes(u_pgrad, 2)) for i in axes(u_pgrad, 1)]
+    ret = [
+        -sum(
+            (u_pgrad[i, j] * logq_comp_u_pgrad[j] + logdet_u_pgrad[i, j]) * wts[j] for
+            j in axes(u_pgrad, 2)
+        ) for i in axes(u_pgrad, 1)
+    ]
     ret
 end
 
@@ -47,9 +53,9 @@ end
 
 function Loss(::Sobolev12Reg, Umap::TransportMap, qrule::QuadRule)
     pts, wts = GetQuad(qrule)
-    u_eval, u_igrad = EvaluateMap(Umap,
-        pts,
-        [DerivativeFlags.None, DerivativeFlags.InputGrad])
+    u_eval, u_igrad = EvaluateMap(
+        Umap, pts, [DerivativeFlags.None, DerivativeFlags.InputGrad]
+    )
     ret = 0
     for j in eachindex(u_eval)
         ret += (u_eval[j] * u_eval[j] + u_igrad[j] * u_igrad[j]) * wts[j]
@@ -59,14 +65,16 @@ end
 
 function LossParamGrad(::Sobolev12Reg, Umap::TransportMap, qrule::QuadRule)
     pts, wts = GetQuad(qrule)
-    u_eval, u_igrad, u_pgrad, u_mgrad = EvaluateMap(Umap,
+    u_eval, u_igrad, u_pgrad, u_mgrad = EvaluateMap(
+        Umap,
         pts,
         [
             DerivativeFlags.None,
             DerivativeFlags.InputGrad,
             DerivativeFlags.ParamGrad,
             DerivativeFlags.MixedGrad,
-        ])
+        ],
+    )
     ret = zeros(NumParams(Umap))
     for i in eachindex(ret)
         for j in eachindex(wts)

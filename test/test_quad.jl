@@ -51,7 +51,7 @@ function TestQuadrature(rng::AbstractRNG)
             tol = 1e-8
             err = abs(test_approx - ref_approx)
             (abs(ref_approx) > 10) && (err /= abs(ref_approx))
-            @test err<tol skip=(order > 50)
+            @test err < tol skip = (order > 50)
         end
     end
 end

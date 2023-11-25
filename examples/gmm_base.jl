@@ -28,7 +28,7 @@ function TrainMap_PosConstraint(alg, umap, qrule, loss)
         SetParams(umap_e, params)
         g .= LossParamGrad(loss_e, umap_e, qrule_e)
     end
-    func = OptimizationFunction(EvalLoss, grad = EvalLossGrad!)
+    func = OptimizationFunction(EvalLoss; grad=EvalLossGrad!)
     num_params = NumParams(umap)
     lb = zeros(num_params)
     lb[1] = -Inf
@@ -45,18 +45,15 @@ function Distributions.gradlogpdf(d::AbstractMixtureModel, x::Float64)
     ps = probs(d)
     ds = components(d)
     inds = filter(i -> !iszero(ps[i]), eachindex(ps, ds))
-    ws = Distributions.pweights(Distributions.softmax!([log(ps[i]) + logpdf(ds[i], x)
-                                                        for i in inds]))
+    ws = Distributions.pweights(
+        Distributions.softmax!([log(ps[i]) + logpdf(ds[i], x) for i in inds])
+    )
     g = mean(map(i -> gradlogpdf(ds[i], x), inds), ws)
     g
 end
 
 # Simple external hybrid inverse implementation
-function InverseMap(umap::TransportMap,
-        point::Real;
-        lb::Real = -20,
-        ub::Real = 20,
-        maxiters = 3,)
+function InverseMap(umap::TransportMap, point::Real; lb::Real=-20, ub::Real=20, maxiters=3)
     f = x -> EvaluateMap(umap, [x])[] - point
     tracks = Roots.Tracks()
     x_rough = find_zero(f, (lb, ub), Bisection(); maxiters, tracks)
@@ -66,10 +63,9 @@ function InverseMap(umap::TransportMap,
     x_fine
 end
 
-function TransportLogpdf_from_dens(umap::TransportMap,
-        reference::Distribution,
-        points::AbstractVector;
-        inverse_kwargs...,)
+function TransportLogpdf_from_dens(
+    umap::TransportMap, reference::Distribution, points::AbstractVector; inverse_kwargs...
+)
     imap = point -> InverseMap(umap, point; inverse_kwargs...)
     map_points = imap.(points)
     eval_ref_logpdf = logpdf.(reference, map_points)

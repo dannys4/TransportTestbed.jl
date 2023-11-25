@@ -1,2 +1,2 @@
-style = "sciml"
-format_markdown = true
+style = "blue"
+always_use_return = false

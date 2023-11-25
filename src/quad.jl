@@ -55,7 +55,7 @@ Reference:
     Mathematics of Computation,
     Volume 22, Number 104, October 1968, pages 847-856.
 """
-function hermite_gk22(n; normalize = true)
+function hermite_gk22(n; normalize=true)
     if (n == 1)
         x = [0.0000000000000000E+00]
 
