@@ -24,12 +24,30 @@ function TestKLDiv(rng::AbstractRNG)
     qrule_GH = BlackboxQuad(gaussprobhermite, num_quad_GH)
     qrule_MC = MCQuad(randn(rng, num_quad_MC))
     kl_eval_GH = Loss(kl, linmap, qrule_GH)
-    kl_eval_MC = Loss(kl, linmap, qrule_MC) / num_quad_MC
+    kl_eval_MC = Loss(kl, linmap, qrule_MC)
 
     # For identity map and gaussian reference, kl should evaluate the entropy of the gaussian
     gauss_entropy = (log(2 * pi) - log(alpha * alpha) + alpha * alpha) / 2
     @test abs(kl_eval_GH - gauss_entropy) / gauss_entropy < 1e-8
     @test abs(kl_eval_MC - gauss_entropy) / gauss_entropy < 10 / sqrt(num_quad_MC)
+end
+
+function TestQuadRule(rng::AbstractRNG)
+    # Normal distribution has variance 1
+    test_func = x->x*x
+    int_analytical = 1.
+    num_quad_GH, num_quad_MC = 100, 10_000
+    tol_GH, tol_MC = 1e-8, 10/sqrt(num_quad_MC)
+    tol_mix = (tol_GH+tol_MC)/2
+    qrule_GH = BlackboxQuad(gaussprobhermite, num_quad_GH)
+    qrule_MC = MCQuad((randn(rng, num_quad_MC)))
+    qrule_mix = QuadPair(qrule_GH, qrule_MC)
+    qrules = [(qrule_GH, tol_GH), (qrule_MC, tol_MC), (qrule_mix, tol_mix)]
+    for (qrule, tol) in qrules
+        pts, wts = TransportTestbed.GetQuad(qrule)
+        test_int = test_func.(pts)'wts
+        @test abs(test_int-int_analytical) < tol
+    end
 end
 
 function TestRegularizers()

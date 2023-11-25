@@ -1,6 +1,11 @@
 GetQuad(q::QuadRule) = __notImplement(GetQuad, typeof(q), QuadRule)
-GetQuad(q::MCQuad) = (q.samples, ones(length(q.samples)))
+GetQuad(q::MCQuad) = (q.samples, fill(1/length(q.samples),length(q.samples)))
 GetQuad(q::BlackboxQuad) = q.eval(q.num_quad)
+function GetQuad(q::QuadPair)
+    pts1, wts1 = GetQuad(q.quad1)
+    pts2, wts2 = GetQuad(q.quad2)
+    vcat(pts1, pts2), vcat(q.quad1_weight*wts1,q.quad2_weight*wts2)
+end
 
 function Loss(loss::LossFunction, ::TransportMap, ::QuadRule)
     __notImplement(Loss, typeof(loss), LossFunction)

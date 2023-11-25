@@ -106,6 +106,20 @@ struct BlackboxQuad{T} <: QuadRule
     num_quad::Int
 end
 
+struct QuadPair{Q1,Q2} <: QuadRule where {Q1 <: QuadRule, Q2 <: QuadRule}
+    quad1::Q1
+    quad2::Q2
+    quad1_weight::Float64
+    quad2_weight::Float64
+    function QuadPair(quad1::_Q1, quad2::_Q2; quad1_weight::Real = 0.5, quad2_weight::Real = 0.5) where {_Q1 <: QuadRule, _Q2 <: QuadRule}
+        total_weight = quad1_weight+quad2_weight
+        if quad1_weight < 0 || quad2_weight < 0 || total_weight <= 0
+            throw(ArgumentError("Must have nonnegative weights with nonzero sum. Given weights $quad1_weight, $quad2_weight"))
+        end
+        new{_Q1, _Q2}(quad1, quad2, quad1_weight, quad2_weight)
+    end
+end
+
 struct KLDiv{T, U} <: LossFunction
     logdensity::T
     gradlogdensity::U
