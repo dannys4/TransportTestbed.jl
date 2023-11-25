@@ -34,7 +34,6 @@ rng = Xoshiro(1028302)
         end
     end
     @testset "Linear Map" begin
-        
         @testset "Identity Map" begin
             TestIdentityMapParam()
             linmap = DefaultIdentityMap()
