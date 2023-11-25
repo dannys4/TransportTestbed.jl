@@ -1,3 +1,6 @@
+using Pkg
+Pkg.activate(@__DIR__)
+
 using TransportTestbed,
     GLMakie,
     Random,
@@ -16,10 +19,10 @@ end
 struct QuadRuleBench
     N::Int
     qrule::TransportTestbed.QuadRule
-    plot_args::QuadRulePlotArgs
     error::Ref{Float64}
+    name::Symbol
 end
-    
+
 rng = Xoshiro(392204)
 stds = [1.5, 0.5]
 means = [-0.5, 0.5]
@@ -29,7 +32,12 @@ gmm = MixtureModel([Normal(m, s) for (m, s) in zip(means, stds)], weights / sum(
 norm_dist = Normal()
 map_from_dens = x -> invlogcdf(gmm, logcdf(norm_dist, x))
 map_from_samp = x -> invlogcdf(norm_dist, logcdf(gmm, x))
-gaussprobhermite = n -> gausshermite(n, normalize=true)
+
+struct gaussprobhermite end
+
+function (gh::gaussprobhermite)(n::Int)
+    gausshermite(n, normalize=true)
+end
 
 function DefaultMap(;max_degree = 10, mapLB = -0.4, mapUB = 1.6, left_tailwidth = 3, right_tailwidth = 4)
     centers = [quantile(norm_dist, (1:j) / (j + 1)) for j in 1:max_degree]
