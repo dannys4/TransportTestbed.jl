@@ -15,6 +15,7 @@ gmm = MixtureModel([Normal(m, s) for (m, s) in zip(means, stds)], weights / sum(
 norm_dist = Normal()
 map_from_dens = x -> invlogcdf(gmm, logcdf(norm_dist, x))
 map_from_samp = x -> invlogcdf(norm_dist, logcdf(gmm, x))
+gaussprobhermite = n -> gausshermite(n, normalize=true)
 
 function TrainMap_PosConstraint(alg, umap, qrule, loss)
     vars = (umap, qrule, loss)
