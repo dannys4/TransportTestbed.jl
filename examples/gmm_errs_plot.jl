@@ -1,6 +1,6 @@
 include("gmm_base.jl")
 
-using DataFrames, JLD2
+using DataFrames, JLD2, GLMakie
 
 COLORS = Makie.wong_colors()
 
@@ -23,13 +23,27 @@ HYBRID_QMC_PLOT_DICT = Dict(
 )
 
 PLOT_DICT = Dict(
-    :quadrature => QuadRulePlotArgs("Quadrature", COLORS[1], :rect),
+    :quadrature => QuadRulePlotArgs("Gauss-Hermite", COLORS[1], :rect),
     :montecarlo => QuadRulePlotArgs("Monte Carlo", COLORS[2], :rect),
-    :qmc => QuadRulePlotArgs("QMC", COLORS[3], :rect),
+    :qmc => QuadRulePlotArgs("Mapped Sobol QMC", COLORS[3], :rect),
     :hybrid_mc => nothing,
     :hybrid_qmc => nothing
 )
 
 
+qrules = jldopen(joinpath(@__DIR__, "data", "quadrule_error.jld2"))["quadrules"]
 
-qrules_jld2 = jldopen(joinpath(@__DIR__, "data", "quadrule_error.jld2"))["quadrules"]
+##
+quad_conv = qrules[:,1]
+mc_conv = qrules[:,2]
+qmc_conv = qrules[:,3]
+fig = Figure()
+ax = Axis(fig[1,1], xscale=log10, yscale=log10, xlabel="N", ylabel="KS-statistic", title="Convergence of 'pure' methods, 1D")
+for conv in [quad_conv, mc_conv, qmc_conv]
+    plot_args = PLOT_DICT[conv[1].name]
+    Ns = [c.N for c in conv]
+    errs = [c.error[] for c in conv]
+    scatterlines!(ax, Ns, errs, label=plot_args.name, linewidth=3, marker=plot_args.marker)
+end
+axislegend()
+save(joinpath(@__DIR__, "figs", "pure_conv.png"), fig)
