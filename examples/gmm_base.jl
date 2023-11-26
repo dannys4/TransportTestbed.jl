@@ -10,7 +10,7 @@ using TransportTestbed,
     FastGaussQuadrature,
     Roots
 
-struct QuadRulePlotArgs
+struct BenchPlotArgs
     name::String
     color
     marker::Symbol

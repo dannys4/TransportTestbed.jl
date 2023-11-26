@@ -136,7 +136,8 @@ function CreateQuadRuleErrors(
     quadrules = CreateAllQuadRuleBench(rng, n_pt_range, quad_descs)
     error_pts = randn(rng, N_error_pts)
     p = Progress(length(quadrules); dt=1, desc="Assessing qrule error...")
-    Threads.@threads for (j,qrule_bench) in enumerate(quadrules)
+    Threads.@threads for j in eachindex(quadrules)
+        qrule_bench = quadrules[j]
         AssessError!(qrule_bench.error, qrule_bench.qrule, target_dist, error_pts)
         jldsave(joinpath(@__DIR__, "data", "tmp", "quadrule_error_$(j).jld2");qrule_bench)
         next!(p)
@@ -146,17 +147,16 @@ function CreateQuadRuleErrors(
     quadrules
 end
 
-function CoalesceRegBenchTmp()
-
-end
-
 function CreateRegularizationErrors(
-    rng::AbstractRNG, target_dist::Distribution; N_pt_tune::Int = 1_000, N_error_pts::Int=10_000, num_pt_range = nothing, bench_conv::Bool = true, bench_tune::Bool = true
+    rng::AbstractRNG, target_dist::Distribution; N_pt_tune::Int = 60, N_error_pts::Int=10_000, num_pt_range = nothing, bench_conv::Bool = true, bench_tune::Bool = true
 )
     quad_desc = (:quadrature,)
-    isnothing(num_pt_range) && (num_pt_range = round.(Int, 10 .^ (1:0.25:3)))
-    reg_range = 10 .^ ((-9:0)/3)
-    reg_conv = vcat([(r,0.) for r in reg_range], [(0.,r) for r in reg_range])
+    isnothing(num_pt_range) && (num_pt_range = round.(Int, 10 .^ (1:0.2:2)))
+    frac_inc = 3 # Increment by a multiple of 10^{1/frac_inc}
+    reg_log_min = -5 # start at 10^{reg_log_min}
+    reg_log_max = -1 # end at 10^{reg_log_max}
+    reg_range = 10 .^ ((reg_log_min*frac_inc:reg_log_max*frac_inc)/frac_inc)
+    reg_conv = vcat([(0.,0.)], [(r,0.) for r in reg_range], [(0.,r) for r in reg_range])
     reg_bench_conv = CreateAllRegBench_converge(rng, num_pt_range, quad_desc, reg_conv)
     reg_bench_tune = CreateAllRegBench_tuneReg(rng, N_pt_tune, quad_desc, reg_range, reg_range)
     error_pts = randn(rng, N_error_pts)
