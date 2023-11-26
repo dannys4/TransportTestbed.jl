@@ -91,7 +91,7 @@ function CreateHybridConvergencePlot(qrules, which_mc)
     errs = [c.error[] for c in col]
     plot_lamb(Ns, errs, plot_args, linestyle=:dash)
     axislegend()
-    save(joinpath(@__DIR__, "figs", "hybric_conv_$(title_suff).png"), fig)
+    save(joinpath(@__DIR__, "figs", "hybrid_conv_$(title_suff).png"), fig)
     fig
 end
 

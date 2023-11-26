@@ -95,8 +95,13 @@ end
 
 function LossParamGrad(loss::CombinedLoss, Umap::TransportMap, qrule::QuadRule)
     primary = LossParamGrad(loss.eval_primary, Umap, qrule)
-    param_reg = LossParamGrad(loss.eval_p_reg, Umap, qrule)
-    sob_reg = LossParamGrad(loss.eval_sob_reg, Umap, qrule)
+    param_reg = sob_reg = zeros(size(primary))
+    if loss.weight_p_reg > 1e-15
+        param_reg = LossParamGrad(loss.eval_p_reg, Umap, qrule)
+    end
+    if loss.weight_sob_reg > 1e-15
+        sob_reg = LossParamGrad(loss.eval_sob_reg, Umap, qrule)
+    end
     primary * loss.weight_primary +
     param_reg * loss.weight_p_reg +
     sob_reg * loss.weight_sob_reg

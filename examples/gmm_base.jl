@@ -23,6 +23,14 @@ struct QuadRuleBench
     name::Symbol
 end
 
+struct RegBench
+    N::Int
+    qrule::TransportTestbed.QuadRule
+    error::Ref{Float64}
+    l2_reg::Float64
+    sob_reg::Float64
+end
+
 rng = Xoshiro(392204)
 stds = [1.5, 0.5]
 means = [-0.5, 0.5]
