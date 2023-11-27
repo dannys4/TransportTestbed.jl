@@ -6,10 +6,7 @@ function TestFakeTransportMap()
     @test_throws NotImplementedError EvaluateMap(umap, [1.0, 2.0, 3.0])
 end
 
-function TestLogDeterminant(umap::TransportMap,
-        rng::AbstractRNG,
-        N_pts = 1000,
-        fd_delta = 1e-5)
+function TestLogDeterminant(umap::TransportMap, rng::AbstractRNG, N_pts=1000, fd_delta=1e-5)
     default_params = ones(NumParams(umap))
     SetParams(umap, default_params)
     points = randn(rng, N_pts)

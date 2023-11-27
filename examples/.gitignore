@@ -1,0 +1,4 @@
+data/*.jld2
+figs/*.pdf
+figs/*.png
+data/tmp/*.jld2

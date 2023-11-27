@@ -32,7 +32,7 @@ function TestIdentityMapParam()
     @test all(out3_diff2 .== 0.0)
 end
 
-function TestLinearMapEvaluate(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000)
+function TestLinearMapEvaluate(linmap::LinearMap, rng::AbstractRNG, N_pts=1000)
     points = randn(rng, N_pts)
     num_params = NumParams(linmap)
     @test num_params == length(linmap.__coeff)
@@ -46,15 +46,18 @@ function TestLinearMapEvaluate(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000
     scale, shift = 0.75, 0.25
     SetParams(linmap, scale * sample_params .+ shift)
     eval_pts_lin = Evaluate(linmap, points)
-    @test all(abs.(eval_pts_lin - (scale * eval_pts +
-                    EvaluateAll(linmap.__map_eval, num_params - 1, points)' *
-                    fill(shift, num_params))) .< 1e-10)
+    @test all(
+        abs.(
+            eval_pts_lin - (
+                scale * eval_pts +
+                EvaluateAll(linmap.__map_eval, num_params - 1, points)' *
+                fill(shift, num_params)
+            )
+        ) .< 1e-10,
+    )
 end
 
-function TestLinearMapGrad(linmap::LinearMap,
-        rng::AbstractRNG,
-        N_pts = 1000,
-        fd_delta = 1e-5)
+function TestLinearMapGrad(linmap::LinearMap, rng::AbstractRNG, N_pts=1000, fd_delta=1e-5)
     num_params = NumParams(linmap)
     points = randn(rng, N_pts)
     default_params = ones(num_params)
@@ -93,10 +96,7 @@ function TestLinearMapGrad(linmap::LinearMap,
     @test all(pgrad_pts_lin4 .== grad_pts_lin3)
 end
 
-function TestLinearMapHess(linmap::LinearMap,
-        rng::AbstractRNG,
-        N_pts = 1000,
-        fd_delta = 1e-8)
+function TestLinearMapHess(linmap::LinearMap, rng::AbstractRNG, N_pts=1000, fd_delta=1e-8)
     points = randn(rng, N_pts)
     num_params = NumParams(linmap)
     default_params = ones(num_params)
@@ -122,8 +122,9 @@ function TestLinearMapHess(linmap::LinearMap,
     SetParams(linmap, default_params)
     mixed_fd_diff = reduce(hcat, mixed_fd_diff)'
 
-    eval_pts_lin3, igrad_pts_lin3, mgrad_pts_lin3 = EvaluateInputGradMixedGrad(linmap,
-        points)
+    eval_pts_lin3, igrad_pts_lin3, mgrad_pts_lin3 = EvaluateInputGradMixedGrad(
+        linmap, points
+    )
     @test all(eval_pts_lin1 .== eval_pts_lin3)
     @test all(igrad_pts_lin1 .== igrad_pts_lin3)
     @test all(abs.(mixed_fd_diff - mgrad_pts_lin3) .< 10 * fd_delta)
@@ -132,12 +133,9 @@ function TestLinearMapHess(linmap::LinearMap,
     mixed_fd_diff2 = (mgrad_pts_lin3_fd - mgrad_pts_lin3) / fd_delta
 
     _, pgrad_pts_lin1 = EvaluateParamGrad(linmap, points)
-    eval_pts_lin4,
-    pgrad_pts_lin4,
-    igrad_pts_lin4,
-    mgrad_pts_lin4,
-    mhess_pts_lin4,
-    ihess_pts_lin4 = EvaluateParamGradInputGradMixedGradMixedInputHess(linmap, points)
+    eval_pts_lin4, pgrad_pts_lin4, igrad_pts_lin4, mgrad_pts_lin4, mhess_pts_lin4, ihess_pts_lin4 = EvaluateParamGradInputGradMixedGradMixedInputHess(
+        linmap, points
+    )
     @test all(eval_pts_lin1 .== eval_pts_lin4)
     @test all(igrad_pts_lin1 .== igrad_pts_lin4)
     @test all(pgrad_pts_lin1 .== pgrad_pts_lin4)
@@ -146,14 +144,15 @@ function TestLinearMapHess(linmap::LinearMap,
     @test all(abs.(mixed_fd_diff2 - mhess_pts_lin4) .< 10 * fd_delta)
 end
 
-function TestLinearMapEvaluateMap(linmap::LinearMap, rng::AbstractRNG, N_pts = 1000)
+function TestLinearMapEvaluateMap(linmap::LinearMap, rng::AbstractRNG, N_pts=1000)
     points = randn(rng, N_pts)
     num_params = NumParams(linmap)
     default_params = ones(num_params)
     SetParams(linmap, default_params)
 
-    ref_eval, ref_pgrad, ref_igrad, ref_mgrad, ref_mhess, ref_ihess = EvaluateParamGradInputGradMixedGradMixedInputHess(linmap,
-        points)
+    ref_eval, ref_pgrad, ref_igrad, ref_mgrad, ref_mhess, ref_ihess = EvaluateParamGradInputGradMixedGradMixedInputHess(
+        linmap, points
+    )
     DF = DerivativeFlags
     eval_plus_flags = [
         (DF.None, ref_eval),
@@ -177,7 +176,7 @@ function TestLinearMapEvaluateMap(linmap::LinearMap, rng::AbstractRNG, N_pts = 1
     new_eval = EvaluateMap(linmap, points)
     @test all(new_eval .== ref_eval)
     @test_throws ArgumentError EvaluateMap(linmap, points, DerivativeFlags.ErrorFlag)
-    @test_throws ArgumentError EvaluateMap(linmap,
-        points,
-        [DerivativeFlags.ErrorFlag, DerivativeFlags.None])
+    @test_throws ArgumentError EvaluateMap(
+        linmap, points, [DerivativeFlags.ErrorFlag, DerivativeFlags.None]
+    )
 end

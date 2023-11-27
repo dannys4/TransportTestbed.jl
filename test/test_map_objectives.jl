@@ -10,7 +10,7 @@ lognormpdf = x -> -(x^2 + log(2pi)) / 2
 gradlognormpdf = x -> -x
 vec_lognormpdf = vec -> map(lognormpdf, vec)
 vec_gradlognormpdf = vec -> map(gradlognormpdf, vec)
-gaussprobhermite = n -> gausshermite(n, normalize = true)
+gaussprobhermite = n -> gausshermite(n; normalize=true)
 
 function TestKLDiv(rng::AbstractRNG)
     id = IdMapParam()
@@ -24,12 +24,30 @@ function TestKLDiv(rng::AbstractRNG)
     qrule_GH = BlackboxQuad(gaussprobhermite, num_quad_GH)
     qrule_MC = MCQuad(randn(rng, num_quad_MC))
     kl_eval_GH = Loss(kl, linmap, qrule_GH)
-    kl_eval_MC = Loss(kl, linmap, qrule_MC) / num_quad_MC
+    kl_eval_MC = Loss(kl, linmap, qrule_MC)
 
     # For identity map and gaussian reference, kl should evaluate the entropy of the gaussian
     gauss_entropy = (log(2 * pi) - log(alpha * alpha) + alpha * alpha) / 2
     @test abs(kl_eval_GH - gauss_entropy) / gauss_entropy < 1e-8
     @test abs(kl_eval_MC - gauss_entropy) / gauss_entropy < 10 / sqrt(num_quad_MC)
+end
+
+function TestQuadRule(rng::AbstractRNG)
+    # Normal distribution has variance 1
+    test_func = x -> x * x
+    int_analytical = 1.0
+    num_quad_GH, num_quad_MC = 100, 10_000
+    tol_GH, tol_MC = 1e-8, 10 / sqrt(num_quad_MC)
+    tol_mix = (tol_GH + tol_MC) / 2
+    qrule_GH = BlackboxQuad(gaussprobhermite, num_quad_GH)
+    qrule_MC = MCQuad((randn(rng, num_quad_MC)))
+    qrule_mix = QuadPair(qrule_GH, qrule_MC)
+    qrules = [(qrule_GH, tol_GH), (qrule_MC, tol_MC), (qrule_mix, tol_mix)]
+    for (qrule, tol) in qrules
+        pts, wts = TransportTestbed.GetQuad(qrule)
+        test_int = test_func.(pts)'wts
+        @test abs(test_int - int_analytical) < tol
+    end
 end
 
 function TestRegularizers()
@@ -59,18 +77,20 @@ function TestRegularizers()
     k_weight = 0.5
     p_weight = 0.25
     s_weight = 0.75
-    loss = CombinedLoss(kl,
+    loss = CombinedLoss(
+        kl,
         param_loss,
         sob_loss;
-        weight_primary = k_weight,
-        weight_param_reg = p_weight,
-        weight_sobolev_reg = s_weight,)
+        weight_primary=k_weight,
+        weight_param_reg=p_weight,
+        weight_sobolev_reg=s_weight,
+    )
     loss_eval = Loss(loss, linmap, qrule_GH)
     exact_loss = kl_eval * k_weight + param_loss_eval * p_weight + sob_loss_eval * s_weight
     @test abs(loss_eval - exact_loss) < 1e-10
 end
 
-function TestLossParamGrad(fd_delta = 1e-5)
+function TestLossParamGrad(fd_delta=1e-5)
     linmap = DefaultSigmoidMap()
     num_params = NumParams(linmap)
     default_params = collect(1.0:num_params)
@@ -81,12 +101,14 @@ function TestLossParamGrad(fd_delta = 1e-5)
     k_weight = 0.5
     p_weight = 0.25
     s_weight = 0.75
-    cl = CombinedLoss(kl,
+    cl = CombinedLoss(
+        kl,
         pr,
         sr;
-        weight_primary = k_weight,
-        weight_param_reg = p_weight,
-        weight_sobolev_reg = s_weight,)
+        weight_primary=k_weight,
+        weight_param_reg=p_weight,
+        weight_sobolev_reg=s_weight,
+    )
     num_quad_GH = 100
     qrule_GH = BlackboxQuad(gaussprobhermite, num_quad_GH)
     losses = [kl, pr, sr, cl]

@@ -44,29 +44,26 @@ Derivative(::Type{SoftPlus}, pt::Float64) = Evaluate(Logistic, pt)
 SecondDerivative(::Type{SoftPlus}, pt::Float64) = Derivative(Logistic, pt)
 
 function CreateSigmoidParam(;
-        centers::__VVN = nothing,
-        widths::__VVN = nothing,
-        weights::__VVN = nothing,
-        mapLB::Real = -5.0,
-        mapUB::Real = 5.0,
-        left_tailwidth::Real = 1.0,
-        right_tailwidth::Real = 1.0,)
-    SigmoidParam{Logistic, SoftPlus}(centers,
-        widths,
-        weights,
-        mapLB,
-        mapUB,
-        left_tailwidth,
-        right_tailwidth)
+    centers::__VVN=nothing,
+    widths::__VVN=nothing,
+    weights::__VVN=nothing,
+    mapLB::Real=-5.0,
+    mapUB::Real=5.0,
+    left_tailwidth::Real=1.0,
+    right_tailwidth::Real=1.0,
+)
+    SigmoidParam{Logistic,SoftPlus}(
+        centers, widths, weights, mapLB, mapUB, left_tailwidth, right_tailwidth
+    )
 end
 NumParams(f::SigmoidParam) = f.max_order + 1
 
-function EvaluateAll(f::SigmoidParam{T, U},
-        max_order::Int,
-        pts::AbstractVector{<:Real}) where {T, U}
+function EvaluateAll(
+    f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<:Real}
+) where {T,U}
     output = Matrix{Float64}(undef, max_order + 1, length(pts))
-    @assert max_order>=2 "Required to evaluate at least constant and tails"
-    @assert max_order<=f.max_order "Can only evaluate on through order $(f.max_order)"
+    @assert max_order >= 2 "Required to evaluate at least constant and tails"
+    @assert max_order <= f.max_order "Can only evaluate on through order $(f.max_order)"
     for (p, pt) in enumerate(pts) # TODO: Parallel
         pt = pts[p]
         output[1, p] = 1
@@ -87,13 +84,13 @@ function EvaluateAll(f::SigmoidParam{T, U},
     output
 end
 
-function Derivative(f::SigmoidParam{T, U},
-        max_order::Int,
-        pts::AbstractVector{<:Real}) where {T, U}
+function Derivative(
+    f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<:Real}
+) where {T,U}
     output = Matrix{Float64}(undef, max_order + 1, length(pts))
     diff = Matrix{Float64}(undef, max_order + 1, length(pts))
-    @assert max_order>=2 "Required to evaluate at least constant and tails"
-    @assert max_order<=f.max_order "Can only evaluate on through order $(f.max_order)"
+    @assert max_order >= 2 "Required to evaluate at least constant and tails"
+    @assert max_order <= f.max_order "Can only evaluate on through order $(f.max_order)"
     for (p, pt) in enumerate(pts) # TODO: Parallel
         pt = pts[p]
         output[1, p] = 1
@@ -120,14 +117,14 @@ function Derivative(f::SigmoidParam{T, U},
     output, diff
 end
 
-function SecondDerivative(f::SigmoidParam{T, U},
-        max_order::Int,
-        pts::AbstractVector{<:Real}) where {T, U}
+function SecondDerivative(
+    f::SigmoidParam{T,U}, max_order::Int, pts::AbstractVector{<:Real}
+) where {T,U}
     output = Matrix{Float64}(undef, max_order + 1, length(pts))
     diff = Matrix{Float64}(undef, max_order + 1, length(pts))
     diff2 = Matrix{Float64}(undef, max_order + 1, length(pts))
-    @assert max_order>=2 "Required to evaluate at least constant and tails"
-    @assert max_order<=f.max_order "Can only evaluate on through order $(f.max_order)"
+    @assert max_order >= 2 "Required to evaluate at least constant and tails"
+    @assert max_order <= f.max_order "Can only evaluate on through order $(f.max_order)"
     for (p, pt) in enumerate(pts) # TODO: Parallel
         pt = pts[p]
         output[1, p] = 1
@@ -137,12 +134,14 @@ function SecondDerivative(f::SigmoidParam{T, U},
         diff[2, p] = f.left_tailwidth * Derivative(U, -f.left_tailwidth * (pt - f.mapLB))
         diff[3, p] = f.right_tailwidth * Derivative(U, f.right_tailwidth * (pt - f.mapUB))
         diff2[1, p] = 0.0
-        diff2[2, p] = -f.left_tailwidth *
-                      f.left_tailwidth *
-                      SecondDerivative(U, -f.left_tailwidth * (pt - f.mapLB))
-        diff2[3, p] = f.right_tailwidth *
-                      f.right_tailwidth *
-                      SecondDerivative(U, f.right_tailwidth * (pt - f.mapUB))
+        diff2[2, p] =
+            -f.left_tailwidth *
+            f.left_tailwidth *
+            SecondDerivative(U, -f.left_tailwidth * (pt - f.mapLB))
+        diff2[3, p] =
+            f.right_tailwidth *
+            f.right_tailwidth *
+            SecondDerivative(U, f.right_tailwidth * (pt - f.mapUB))
         for order in 4:(max_order + 1)
             output[order, p] = 0.0
             diff[order, p] = 0.0
