@@ -21,8 +21,9 @@ export TransportMap,
     LogDeterminantInputGrad,
     LogDeterminantParamGrad
 export EvaluateMap, DerivativeFlags
-export BlackboxQuad,
-    MCQuad, QuadPair, Loss, LossParamGrad, KLDiv, ParamL2Reg, Sobolev12Reg, CombinedLoss
+export BlackboxQuad, MCQuad, QuadPair, NumQuad
+export Loss, LossParamGrad
+export KLDiv, ParamL2Reg, Sobolev12Reg, CombinedLoss
 export Optimize, Nesterov, hermite_gk22
 
 end

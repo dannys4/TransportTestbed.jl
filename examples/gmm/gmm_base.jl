@@ -1,5 +1,5 @@
 using Pkg
-Pkg.activate(joinpath("..",@__DIR__))
+Pkg.activate(dirname(@__DIR__))
 
 using TransportTestbed,
     GLMakie,
@@ -8,7 +8,9 @@ using TransportTestbed,
     Optimization,
     OptimizationOptimJL,
     FastGaussQuadrature,
-    Roots
+    Roots,
+    StatsFuns,
+    LinearAlgebra
 
 struct BenchPlotArgs
     name::String
@@ -48,7 +50,7 @@ function (gh::gaussprobhermite)(n::Int)
 end
 
 function DefaultMap(;max_degree = 10, mapLB = -0.4, mapUB = 1.6, left_tailwidth = 3, right_tailwidth = 4)
-    centers = [quantile(norm_dist, (1:j) / (j + 1)) for j in 1:max_degree]
+    centers = [norminvcdf.((1:j) / (j + 1)) for j in 1:max_degree]
     map_param = CreateSigmoidParam(; centers, mapLB, mapUB, left_tailwidth, right_tailwidth)
     LinearMap(map_param, NumParams(map_param))
 end

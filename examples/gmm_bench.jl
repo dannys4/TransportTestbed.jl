@@ -9,7 +9,7 @@ function FindQuadRule(rng::AbstractRNG, qtype::Symbol, N_pts::Int, description::
     elseif qtype == :qmc
         uniform_samples = QuasiMonteCarlo.sample(N_pts, 0, 1, SobolSample())
         normal_dist = Normal()
-        normal_samples = quantile(normal_dist, uniform_samples[:])
+        normal_samples = norminvcdf(uniform_samples[:])
         return MCQuad(normal_samples)
     elseif qtype == :hybrid_mc
         prop_mc = description[2]
@@ -24,7 +24,7 @@ function FindQuadRule(rng::AbstractRNG, qtype::Symbol, N_pts::Int, description::
         N_pts_quad = N_pts - N_pts_qmc
         uniform_samples = QuasiMonteCarlo.sample(N_pts_qmc, 0, 1, SobolSample())
         normal_dist = Normal()
-        normal_samples = quantile(normal_dist, uniform_samples[:])
+        normal_samples = norminvcdf(uniform_samples[:])
         qrule_qmc = MCQuad(normal_samples)
         qrule_gh = BlackboxQuad(gaussprobhermite(), N_pts_quad)
         return QuadPair(
@@ -139,11 +139,11 @@ function CreateQuadRuleErrors(
     Threads.@threads for j in eachindex(quadrules)
         qrule_bench = quadrules[j]
         AssessError!(qrule_bench.error, qrule_bench.qrule, target_dist, error_pts)
-        jldsave(joinpath("..",@__DIR__, "data", "tmp", "quadrule_error_$(j).jld2");qrule_bench)
+        jldsave(joinpath(dirname(@__DIR__), "data", "tmp", "quadrule_error_$(j).jld2");qrule_bench)
         next!(p)
     end
     finish!(p)
-    jldsave(joinpath("..",@__DIR__, "data", "quadrule_error.jld2"))
+    jldsave(joinpath(dirname(@__DIR__), "data", "quadrule_error.jld2"))
     quadrules
 end
 
@@ -160,7 +160,7 @@ function CreateRegularizationErrors(
     reg_bench_conv = CreateAllRegBench_converge(rng, num_pt_range, quad_desc, reg_conv)
     reg_bench_tune = CreateAllRegBench_tuneReg(rng, N_pt_tune, quad_desc, reg_range, reg_range)
     error_pts = randn(rng, N_error_pts)
-    tmp_save_path = (kind,j)->joinpath("..",@__DIR__, "data", "tmp", "reg_$(kind)_$(j).jld2")
+    tmp_save_path = (kind,j)->joinpath(dirname(@__DIR__), "data", "tmp", "reg_$(kind)_$(j).jld2")
     total_prog_conv = sum(reg_bench.N for reg_bench in reg_bench_conv)
     total_prog_tune = sum(reg_bench.N for reg_bench in reg_bench_tune)
     if bench_conv
@@ -172,7 +172,7 @@ function CreateRegularizationErrors(
             next!(p, step=reg_bench.N)
         end
         finish!(p)
-        jldsave(joinpath("..",@__DIR__, "data", "reg_conv_all.jld2"); reg_bench_conv)
+        jldsave(joinpath(dirname(@__DIR__), "data", "reg_conv_all.jld2"); reg_bench_conv)
     else
         reg_bench_conv = nothing
     end
@@ -185,7 +185,7 @@ function CreateRegularizationErrors(
             next!(p, step=reg_bench.N)
         end
         finish!(p)
-        jldsave(joinpath("..",@__DIR__, "data", "reg_tune_all.jld2"); reg_bench_tune)
+        jldsave(joinpath(dirname(@__DIR__), "data", "reg_tune_all.jld2"); reg_bench_tune)
     else
         reg_bench_tune = nothing
     end

@@ -6,6 +6,9 @@ function GetQuad(q::QuadPair)
     pts2, wts2 = GetQuad(q.quad2)
     vcat(pts1, pts2), vcat(q.quad1_weight * wts1, q.quad2_weight * wts2)
 end
+NumQuad(q::QuadRule) = __notImplement(NumQuad, typeof(q), QuadRule)
+NumQuad(q::MCQuad) = length(q.samples)
+NumQuad(q::BlackboxQuad) = q.num_quad
 
 function Loss(loss::LossFunction, ::TransportMap, ::QuadRule)
     __notImplement(Loss, typeof(loss), LossFunction)

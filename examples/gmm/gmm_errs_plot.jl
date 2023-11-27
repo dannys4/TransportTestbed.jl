@@ -54,7 +54,7 @@ function CreatePureQuadConvergencePlot(qrules)
         )
     end
     axislegend()
-    save(joinpath("..",@__DIR__, "figs", "pure_conv.png"), fig)
+    save(joinpath(dirname(@__DIR__), "figs", "pure_conv.png"), fig)
     fig
 end
 
@@ -97,7 +97,7 @@ function CreateHybridQuadConvergencePlot(qrules, which_mc)
     errs = [c.error[] for c in col]
     plot_lamb(Ns, errs, plot_args, linestyle=:dash)
     axislegend()
-    save(joinpath("..",@__DIR__, "figs", "hybrid_conv_$(title_suff).png"), fig)
+    save(joinpath(dirname(@__DIR__), "figs", "hybrid_conv_$(title_suff).png"), fig)
     fig
 end
 ##
@@ -123,7 +123,7 @@ function CreateMarginalRegConvergencePlot(reg_bench_conv)
         lines!(ax, l2_reg_range, ref_err_repeat; label="Reference", linewidth=3, linestyle=:dash)
         axislegend(position=:lt)
     end
-    save(joinpath("..",@__DIR__, "figs", "reg_conv.png"), fig)
+    save(joinpath(dirname(@__DIR__), "figs", "reg_conv.png"), fig)
     fig
 end
 
@@ -136,17 +136,17 @@ function CreateJointRegTuningPlot(reg_bench_tune)
     l2_vals = map(r->r.l2_reg, reg_bench_tune[:,1])
     hm = heatmap!(ax, sob_vals, l2_vals, log10.(tune_errs))
     Colorbar(fig[1,2], hm, label="log K-S Statistic")
-    save(joinpath("..",@__DIR__, "figs", "reg_tune.png"), fig)
+    save(joinpath(dirname(@__DIR__), "figs", "reg_tune.png"), fig)
     fig
 end
 ##
-qrules = jldopen(joinpath("..",@__DIR__, "data", "quadrule_error.jld2"))["quadrules"]
+qrules = jldopen(joinpath(dirname(@__DIR__), "data", "quadrule_error.jld2"))["quadrules"]
 CreatePureQuadConvergencePlot(qrules)
 CreateHybridQuadConvergencePlot(qrules, :hybrid_mc)
 CreateHybridQuadConvergencePlot(qrules, :hybrid_qmc)
 
 ##
-reg_bench_conv = jldopen(joinpath("..",@__DIR__, "data", "reg_conv_all.jld2"))["reg_bench_conv"]
-reg_bench_tune = jldopen(joinpath("..",@__DIR__, "data", "reg_tune_all.jld2"))["reg_bench_tune"]
+reg_bench_conv = jldopen(joinpath(dirname(@__DIR__), "data", "reg_conv_all.jld2"))["reg_bench_conv"]
+reg_bench_tune = jldopen(joinpath(dirname(@__DIR__), "data", "reg_tune_all.jld2"))["reg_bench_tune"]
 CreateJointRegTuningPlot(reg_bench_tune)
 CreateMarginalRegConvergencePlot(reg_bench_conv)
