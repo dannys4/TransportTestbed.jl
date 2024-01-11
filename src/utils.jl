@@ -19,3 +19,13 @@ end
 function __notImplement(method, child, parent)
     throw(NotImplementedError(parent, method, child))
 end
+
+# A function that implements the Box-Muller algorithm
+function BoxMuller(unif_samples::AbstractVector)
+    U1 = @view unif_samples[1:(end÷2)]
+    U2 = @view unif_samples[(end+3)÷2 : end]
+    mult_term = sqrt.(-2*log.(U1))
+    z1 = mult_term .* cos.(2*π*U2)
+    z2 = mult_term .* sin.(2*π*U2)
+    vcat(z1, z2)
+end

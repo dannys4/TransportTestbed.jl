@@ -111,3 +111,18 @@ function TransportLogpdf_from_dens(
     eval_logdet = LogDeterminant(umap, map_points)
     eval_ref_logpdf - eval_logdet
 end
+
+function KolmogorovSmirnov(
+    umap::TransportMap, target_dist::Distribution, eval_pts::AbstractVector
+)
+    N_pts = length(eval_pts)
+    map_eval = EvaluateMap(umap, eval_pts)
+    sort!(map_eval)
+    e_cdf = collect((1:N_pts) / N_pts)
+    true_cdf = cdf(target_dist, map_eval)
+    maximum(abs.(e_cdf - true_cdf))
+end
+
+function L2(
+    umap::TransportMap
+)

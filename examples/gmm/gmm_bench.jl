@@ -1,16 +1,25 @@
 include("gmm_base.jl")
 using QuasiMonteCarlo, Random, Distributions, JLD2, ProgressMeter
 
+# Note: will round N_pts up to the next power
+function QMCNormal(rng::AbstractRNG, N_pts::Int, dim::Int = 1, SampleType::T = SobolSample, ScrambleType::U = OwenScramble) where {T,U}
+    qmc_base = QuasiMonteCarlo.next_prime(dim)
+    qmc_pad = ceil(Int, log(qmc_base, N_pts))
+    N_pts_sample = qmc_base^(qmc_pad)
+    unif_pts = QuasiMonteCarlo.sample(
+        N_pts_sample, dim, SampleType(ScrambleType(qmc_base, qmc_pad, rng))
+    )
+    TransportTestbed.BoxMuller(unif_pts)
+end
+
 function FindQuadRule(rng::AbstractRNG, qtype::Symbol, N_pts::Int, description::Tuple)
     if qtype == :quadrature
         return BlackboxQuad(gaussprobhermite(), N_pts)
     elseif qtype == :montecarlo
         return MCQuad(randn(rng, N_pts))
     elseif qtype == :qmc
-        uniform_samples = QuasiMonteCarlo.sample(N_pts, 0, 1, SobolSample())
-        normal_dist = Normal()
-        normal_samples = norminvcdf(uniform_samples[:])
-        return MCQuad(normal_samples)
+        normal_qsamples = QMCNormal(rng, N_pts)
+        return MCQuad(normal_qsamples)
     elseif qtype == :hybrid_mc
         prop_mc = description[2]
         N_pts_mc = round(Int, prop_mc * N_pts)

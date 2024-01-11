@@ -53,6 +53,7 @@ struct SigmoidParam{T<:SigmoidType,U<:TailType} <: MapParam
             centers = new_centers
         end
         if isnothing(widths)
+            c_diff = diff(centers)
             widths = [ones(j) for j in 1:length(centers)]
         end
         if isnothing(weights)
