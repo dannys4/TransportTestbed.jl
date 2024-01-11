@@ -60,6 +60,7 @@ rng = Xoshiro(1028302)
     @testset "Optimization" begin
         @testset "Objectives" begin
             TestFakeObjectives()
+            TestQuadRule(rng)
             TestKLDiv(rng)
             TestRegularizers()
             TestLossParamGrad()

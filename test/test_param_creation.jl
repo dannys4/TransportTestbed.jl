@@ -1,6 +1,5 @@
 import TransportTestbed:
-    NotImplementedError,
-    Evaluate, EvaluateAll, Derivative, SecondDerivative
+    NotImplementedError, Evaluate, EvaluateAll, Derivative, SecondDerivative
 
 function TestFakeParamCreation()
     p = FakeParam()
@@ -23,7 +22,7 @@ function TestSigmoidParamCreation()
     weights = [[1]]
     e = nothing
     try
-        SigmoidParam{Logistic, SoftPlus}(centers, widths, weights, -1, 1, 1, 1)
+        SigmoidParam{Logistic,SoftPlus}(centers, widths, weights, -1, 1, 1, 1)
     catch ee
         if ee isa ArgumentError
             e = ee
@@ -37,7 +36,7 @@ function TestSigmoidParamCreation()
     weights = [[1], [1, 2, 3]]
     e = nothing
     try
-        SigmoidParam{Logistic, SoftPlus}(centers, widths, weights, -1, 1, 1, 1)
+        SigmoidParam{Logistic,SoftPlus}(centers, widths, weights, -1, 1, 1, 1)
     catch ee
         if ee isa ArgumentError
             e = ee
@@ -51,7 +50,7 @@ function TestSigmoidParamCreation()
     weights = [[1], [0.5, 0.5]]
     e = nothing
     try
-        SigmoidParam{Logistic, SoftPlus}(centers, widths, weights, 1, -1, 1, 1)
+        SigmoidParam{Logistic,SoftPlus}(centers, widths, weights, 1, -1, 1, 1)
     catch ee
         if ee isa ArgumentError
             e = ee
@@ -60,7 +59,7 @@ function TestSigmoidParamCreation()
         end
     end
     @test !isnothing(e)
-    f = SigmoidParam{Logistic, SoftPlus}(centers, widths, weights, -1, 1, 1, 1)
+    f = SigmoidParam{Logistic,SoftPlus}(centers, widths, weights, -1, 1, 1, 1)
     @test f.max_order == 4
     f = CreateSigmoidParam(; centers, widths, weights)
     @test f.max_order == 4

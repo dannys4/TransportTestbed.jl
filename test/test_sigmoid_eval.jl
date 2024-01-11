@@ -1,5 +1,5 @@
 function TestSigmoidParamEvaluation()
-    f = CreateSigmoidParam(; mapLB = 0.0, mapUB = 0.0)
+    f = CreateSigmoidParam(; mapLB=0.0, mapUB=0.0)
     xgrid = -5:0.05:5
     line = EvaluateAll(f, 2, xgrid)
     @test all(line[1, :] .== 1.0)
@@ -21,7 +21,7 @@ function TestSigmoidParamEvaluation()
 end
 
 function TestSigmoidParamDerivative()
-    f = CreateSigmoidParam(; mapLB = 0.0, mapUB = 0.0)
+    f = CreateSigmoidParam(; mapLB=0.0, mapUB=0.0)
     xgrid = -3:0.05:3
     line, line_diff = Derivative(f, 2, xgrid)
     @test all(line[1, :] .== 1.0)
@@ -46,7 +46,7 @@ function TestSigmoidParamDerivative()
 end
 
 function TestSigmoidParamSecondDerivative()
-    f = CreateSigmoidParam(; mapLB = 0.0, mapUB = 0.0)
+    f = CreateSigmoidParam(; mapLB=0.0, mapUB=0.0)
     xgrid = -3:0.05:3
     line1 = EvaluateAll(f, 2, xgrid)
     _, line2_diff = Derivative(f, 2, xgrid)

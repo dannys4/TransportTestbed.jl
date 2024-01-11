@@ -11,9 +11,9 @@ struct FakeOptimizer <: TransportTestbed.Optimizer end
 
 struct IdMapParam <: TransportTestbed.MapParam end
 
-function TransportTestbed.EvaluateAll(::IdMapParam,
-        max_order::Int,
-        pts::AbstractVector{<:Real})
+function TransportTestbed.EvaluateAll(
+    ::IdMapParam, max_order::Int, pts::AbstractVector{<:Real}
+)
     output = Matrix{Float64}(undef, max_order + 1, length(pts))
     for j in 1:(max_order + 1)
         output[j, :] = pts
@@ -21,9 +21,9 @@ function TransportTestbed.EvaluateAll(::IdMapParam,
     output
 end
 
-function TransportTestbed.Derivative(::IdMapParam,
-        max_order::Int,
-        pts::AbstractVector{<:Real})
+function TransportTestbed.Derivative(
+    ::IdMapParam, max_order::Int, pts::AbstractVector{<:Real}
+)
     output = Matrix{Float64}(undef, max_order + 1, length(pts))
     diff = similar(output)
     for j in 1:(max_order + 1)
@@ -33,9 +33,9 @@ function TransportTestbed.Derivative(::IdMapParam,
     output, diff
 end
 
-function TransportTestbed.SecondDerivative(::IdMapParam,
-        max_order::Int,
-        pts::AbstractVector{<:Real})
+function TransportTestbed.SecondDerivative(
+    ::IdMapParam, max_order::Int, pts::AbstractVector{<:Real}
+)
     output = Matrix{Float64}(undef, max_order + 1, length(pts))
     diff = similar(output)
     diff2 = similar(output)
@@ -47,14 +47,14 @@ function TransportTestbed.SecondDerivative(::IdMapParam,
     output, diff, diff2
 end
 
-function DefaultIdentityMap(num_params = 4)
+function DefaultIdentityMap(num_params=4)
     id = IdMapParam()
     linmap = LinearMap(id, num_params)
     SetParams(linmap, ones(num_params))
     linmap
 end
 
-function DefaultSigmoidMap(num_sigs = 10)
+function DefaultSigmoidMap(num_sigs=10)
     centers = [[((2i - 1) - j) / (j + 1) for i in 1:j] for j in 1:num_sigs]
     sigmap = CreateSigmoidParam(; centers)
     LinearMap(sigmap, sigmap.max_order + 1)
